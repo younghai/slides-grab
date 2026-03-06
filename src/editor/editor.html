@@ -143,10 +143,10 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: flex-start;
       gap: 12px;
-      padding: 24px;
+      padding: 16px 24px 24px;
       min-width: 0;
       overflow: hidden;
       background: linear-gradient(180deg, #0f141b 0%, #0d1218 100%);
@@ -163,6 +163,20 @@
       border-radius: 12px;
       background: rgba(15, 21, 29, 0.92);
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      position: relative;
+      z-index: 20;
+      align-self: center;
+      flex: 0 0 auto;
+    }
+
+    .slide-stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
     }
 
     .tool-mode-group,
@@ -298,7 +312,8 @@
       position: relative;
       width: 960px;
       height: 540px;
-      transform-origin: center center;
+      transform-origin: top center;
+      z-index: 1;
     }
 
     .slide-wrapper iframe {
@@ -1075,16 +1090,18 @@
             </div>
           </div>
         </div>
-        <div class="slide-wrapper" id="slide-wrapper">
-          <button class="clear-overlay-btn" id="btn-clear-bboxes" title="Clear all boxes on current slide">Clear Boxes</button>
-          <iframe id="slide-iframe" sandbox="allow-same-origin allow-scripts" loading="eager"></iframe>
-          <div class="bbox-layer" id="bbox-layer"></div>
-          <div class="object-layer" id="object-layer">
-            <div class="object-outline hover" id="object-hover-box"></div>
-            <div class="object-outline selected" id="object-selected-box"></div>
-          </div>
-          <div class="draw-layer" id="draw-layer">
-            <div class="draw-box" id="draw-box"></div>
+        <div class="slide-stage" id="slide-stage">
+          <div class="slide-wrapper" id="slide-wrapper">
+            <button class="clear-overlay-btn" id="btn-clear-bboxes" title="Clear all boxes on current slide">Clear Boxes</button>
+            <iframe id="slide-iframe" sandbox="allow-same-origin allow-scripts" loading="eager"></iframe>
+            <div class="bbox-layer" id="bbox-layer"></div>
+            <div class="object-layer" id="object-layer">
+              <div class="object-outline hover" id="object-hover-box"></div>
+              <div class="object-outline selected" id="object-selected-box"></div>
+            </div>
+            <div class="draw-layer" id="draw-layer">
+              <div class="draw-box" id="draw-box"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1188,6 +1205,7 @@
     const slideIframe = $('#slide-iframe');
     const slidePanel = $('#slide-panel');
     const slideToolbox = $('#slide-toolbox');
+    const slideStage = $('#slide-stage');
     const slideWrapper = $('#slide-wrapper');
     const bboxLayer = $('#bbox-layer');
     const objectLayer = $('#object-layer');
@@ -1527,14 +1545,13 @@
     // Slide & bbox rendering
     // -------------------------------------------------------------------------
     function scaleSlide() {
-      const padX = 48;
-      const padY = 48;
-      const toolboxHeight = slideToolbox?.offsetHeight || 0;
-      const availW = slidePanel.clientWidth - padX;
-      const availH = slidePanel.clientHeight - padY - toolboxHeight;
+      const padX = 12;
+      const padY = 12;
+      const availW = slideStage.clientWidth - padX;
+      const availH = slideStage.clientHeight - padY;
       if (availW <= 0 || availH <= 0) return;
 
-      const scale = Math.min(availW / SLIDE_W, availH / SLIDE_H) * 0.95;
+      const scale = Math.min(availW / SLIDE_W, availH / SLIDE_H, 1);
       slideWrapper.style.transform = `scale(${scale})`;
     }
 

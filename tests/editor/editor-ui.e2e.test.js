@@ -422,3 +422,59 @@ test('supports direct object selection, inline styling, and switching back to bb
     await rm(workspace, { recursive: true, force: true }).catch(() => {});
   }
 });
+
+test('keeps the toolbox above the slide in a 16:9 viewport', async () => {
+  const workspace = await mkdtemp(join(os.tmpdir(), 'editor-ui-toolbox-layout-e2e-'));
+  await writeSlides(workspace);
+
+  const port = 3655;
+  const serverOutput = { value: '' };
+  const serverScriptPath = join(REPO_ROOT, 'scripts', 'editor-server.js');
+  const server = spawn(process.execPath, [serverScriptPath, '--port', String(port)], {
+    cwd: workspace,
+    env: {
+      ...process.env,
+      PPT_AGENT_PACKAGE_ROOT: REPO_ROOT,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  server.stdout.on('data', (chunk) => {
+    serverOutput.value += chunk.toString();
+  });
+  server.stderr.on('data', (chunk) => {
+    serverOutput.value += chunk.toString();
+  });
+
+  let browser;
+  try {
+    await waitForServerReady(port, server, serverOutput);
+
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage({ viewport: { width: 1496, height: 768 } });
+    await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded' });
+
+    await page.waitForSelector('#slide-toolbox');
+    await page.waitForSelector('#slide-wrapper');
+    await page.waitForTimeout(500);
+
+    const toolboxBox = await page.locator('#slide-toolbox').boundingBox();
+    const wrapperBox = await page.locator('#slide-wrapper').boundingBox();
+    assert.ok(toolboxBox, 'toolbox not found');
+    assert.ok(wrapperBox, 'slide wrapper not found');
+    assert.ok(toolboxBox.y + toolboxBox.height <= wrapperBox.y, 'toolbox should stay above the slide frame');
+
+    await page.click('#tool-mode-select');
+    await page.waitForFunction(() => {
+      const button = document.querySelector('#tool-mode-select');
+      return button && button.classList.contains('active');
+    });
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+    server.kill('SIGTERM');
+    await sleep(400);
+    await rm(workspace, { recursive: true, force: true }).catch(() => {});
+  }
+});
