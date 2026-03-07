@@ -142,13 +142,9 @@
     .slide-panel {
       flex: 1;
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 12px;
-      padding: 16px 24px 24px;
       min-width: 0;
       overflow: hidden;
+      padding: 12px;
       background: linear-gradient(180deg, #0f141b 0%, #0d1218 100%);
     }
 
@@ -173,7 +169,7 @@
       flex: 1;
       min-height: 0;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
       overflow: hidden;
       position: relative;
@@ -1229,12 +1225,258 @@
       white-space: nowrap;
     }
 
-    .selected-object-mini {
+    /* ── Editor sidebar ── */
+    .editor-sidebar {
+      width: 280px;
+      min-width: 280px;
+      border-left: 1px solid var(--border);
+      background: linear-gradient(180deg, #11161d 0%, #0d1218 100%);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sidebar-mode-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 10px 10px 0;
+      flex: 0 0 auto;
+    }
+
+    .sidebar-mode-tab {
+      flex: 1;
+      height: 38px;
+      border: 1px solid #2c3847;
+      background: #18212c;
+      color: #b0bcc9;
+      border-radius: 10px;
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .sidebar-mode-tab .tool-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    .sidebar-mode-tab:hover { background: #212d3a; }
+
+    .sidebar-mode-tab.active {
+      border-color: #3963a4;
+      background: #1d3355;
+      color: #e8f0fb;
+    }
+
+    .sidebar-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px;
+      min-height: 0;
+    }
+
+    .sidebar-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sidebar-panel[hidden] {
+      display: none !important;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-2);
+      font-family: var(--mono);
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border-soft);
+      margin: 4px 0;
+    }
+
+    .sidebar-textarea {
+      width: 100%;
+      min-height: 68px;
+      border-radius: 10px;
+      border: 1px solid #2e3948;
+      background: #0f141a;
+      color: #e6edf3;
+      font-size: 13px;
+      font-family: var(--sans);
+      padding: 10px 12px;
+      outline: none;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .sidebar-textarea:focus { border-color: #3c4e63; }
+    .sidebar-textarea::placeholder { color: #627183; }
+
+    .editor-sidebar .model-select {
+      width: 100%;
+      min-width: 0;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    .sidebar-btn {
+      width: 100%;
+      height: 40px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: var(--sans);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .sidebar-btn:disabled { opacity: 0.35; cursor: default; }
+
+    .sidebar-btn-primary {
+      background: linear-gradient(180deg, #2754a7 0%, #1d3f84 100%);
+      color: #dce7f6;
+      border: 1px solid #304f85;
+    }
+
+    .sidebar-btn-primary:hover:not(:disabled) {
+      background: linear-gradient(180deg, #2d63c8 0%, #224a99 100%);
+    }
+
+    .sidebar-btn-primary .btn-send-icon {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    .sidebar-input {
+      flex: 1;
+      min-width: 0;
       height: 34px;
-      max-width: 200px;
+      border-radius: 8px;
+      border: 1px solid #2e3948;
+      background: #0f141a;
+      color: #e6edf3;
+      font-size: 12px;
+      font-family: var(--sans);
       padding: 0 10px;
+      outline: none;
+    }
+
+    .sidebar-input:focus { border-color: #496a94; }
+    .sidebar-input:disabled { opacity: 0.4; cursor: default; }
+
+    .sidebar-number {
+      width: 70px;
+      flex: 0 0 auto;
+      font-family: var(--mono);
+    }
+
+    .sidebar-unit {
+      color: var(--text-2);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+
+    .sidebar-field-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sidebar-btn-sm {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid #3b82f6;
+      background: #18365d;
+      color: #eff6ff;
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 700;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .sidebar-btn-sm:hover:not(:disabled) { background: #1d4173; }
+    .sidebar-btn-sm:disabled { opacity: 0.35; cursor: default; }
+
+    .sidebar-color-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sidebar-color-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    .sidebar-color-label {
+      font-size: 10px;
+      color: var(--text-2);
+      font-family: var(--mono);
+    }
+
+    .sidebar-color {
+      width: 100%;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #2e3948;
+      background: #111722;
+      cursor: pointer;
+      padding: 3px;
+    }
+
+    .sidebar-color:disabled { opacity: 0.35; cursor: default; }
+
+    .sidebar-icon-grid {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .editor-sidebar .tool-icon-btn {
+      min-width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      padding: 0 8px;
+    }
+
+    .editor-sidebar .tool-icon-btn.tight {
+      min-width: 38px;
+      width: 38px;
+      padding: 0;
+    }
+
+    .sidebar-object-card {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
       border-radius: 8px;
       border: 1px solid #2f3c4d;
       background: #111a24;
@@ -1244,41 +1486,31 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      flex: 0 0 auto;
     }
 
-    .selected-object-mini .mini-tag {
+    .sidebar-object-card .mini-tag {
       color: #60a5fa;
       font-weight: 700;
       margin-right: 3px;
-    }
-
-    .toolbar-group-label {
-      color: var(--text-2);
-      font-size: 9px;
-      font-family: var(--mono);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-
-    .color-indicator {
-      position: absolute;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 18px;
-      height: 3px;
-      border-radius: 1.5px;
-      pointer-events: none;
     }
 
     .select-empty-hint {
       color: var(--text-2);
       font-size: 12px;
       font-family: var(--mono);
-      padding: 0 4px;
+      padding: 8px 0;
+    }
+
+    .sidebar-hint {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border-soft);
+      color: var(--text-2);
+      font-size: 11px;
+      font-family: var(--mono);
+      min-height: 32px;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
@@ -1313,139 +1545,6 @@
 
     <div class="main-content">
       <div class="slide-panel" id="slide-panel">
-        <div class="slide-toolbox" id="slide-toolbox">
-          <div class="tool-strip" id="tool-strip">
-            <div class="tool-mode-group">
-              <button type="button" class="tool-mode-btn active" id="tool-mode-draw" aria-pressed="true" title="BBox mode">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M5 5h14v14H5zM9 5v14M15 5v14M5 9h14M5 15h14"/>
-                </svg>
-                <span>BBox</span>
-              </button>
-              <button type="button" class="tool-mode-btn" id="tool-mode-select" aria-pressed="false" title="Select object mode">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m6 4 11 8-5 1.2L14.6 20l-2.5 1-2.6-6.8L6 15z"/>
-                </svg>
-                <span>Select</span>
-              </button>
-            </div>
-            <div class="toolbar-divider" aria-hidden="true"></div>
-            <div class="bbox-toolbar" id="bbox-toolbar">
-              <span class="bbox-count" id="bbox-count">0 pending · 0 review</span>
-              <div class="prompt-shell">
-                <input id="prompt-input" class="prompt-input" type="text" placeholder="Describe the edit for the selected red bbox">
-              </div>
-              <select id="model-select" class="model-select">
-                <option value="gpt-5.3-codex">gpt-5.3-codex</option>
-                <option value="gpt-5.3-codex-spark">gpt-5.3-codex-spark</option>
-              </select>
-              <button class="btn btn-send" id="btn-send" title="Run Codex" aria-label="Run Codex">
-                <svg class="btn-send-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M3.4 11.2 19.6 4.4c.8-.3 1.7.5 1.4 1.4l-6.8 16.2c-.3.8-1.4.9-1.9.1L9.2 16l-6.1-3.1c-.8-.5-.7-1.6.3-1.7Zm5.1 3.6 3.2 1.6 4.9-11.7-11.7 4.9 3.6 1.8 6.2-3.7c.4-.2.8.1.6.6l-6.8 6.5Z"/>
-                </svg>
-              </button>
-            </div>
-            <div class="select-toolbar" id="select-toolbar" hidden>
-              <span class="selected-object-mini" id="selected-object-mini" style="display:none">
-                <span class="mini-tag" id="mini-tag"></span>
-                <span id="mini-text"></span>
-              </span>
-              <span class="select-empty-hint" id="select-empty-hint">Click an object to select</span>
-              <div class="toolbar-divider" aria-hidden="true"></div>
-              <span class="toolbar-group-label">Edit</span>
-              <button type="button" class="tool-icon-btn" id="select-action-text" title="Edit text">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
-                </svg>
-              </button>
-              <button type="button" class="tool-icon-btn" id="select-action-text-color" title="Text color">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m9 15 3-9 3 9M10.5 11h3"/>
-                </svg>
-                <span class="color-indicator" id="text-color-indicator" style="background:#888"></span>
-              </button>
-              <button type="button" class="tool-icon-btn" id="select-action-bg-color" title="Background color">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0L19 11Z"/><path d="m5 2 5 5"/>
-                </svg>
-                <span class="color-indicator" id="bg-color-indicator" style="background:#888"></span>
-              </button>
-              <button type="button" class="tool-icon-btn" id="select-action-size" title="Font size">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
-                </svg>
-              </button>
-              <div class="toolbar-divider" aria-hidden="true"></div>
-              <span class="toolbar-group-label">Style</span>
-              <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-bold" title="Bold (⌘B)">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M14 12a4 4 0 0 0 0-8H6v8"/><path d="M15 20a4 4 0 0 0 0-8H6v8"/>
-                </svg>
-              </button>
-              <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-italic" title="Italic (⌘I)">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M19 4h-9M14 20H5M15 4 9 20"/>
-                </svg>
-              </button>
-              <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-underline" title="Underline (⌘U)">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/>
-                </svg>
-              </button>
-              <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-strike" title="Strikethrough">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><path d="M4 12h16"/>
-                </svg>
-              </button>
-              <div class="toolbar-divider" aria-hidden="true"></div>
-              <span class="toolbar-group-label">Align</span>
-              <button type="button" class="tool-icon-btn align-btn tight" id="align-left" title="Align left">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M21 6H3M15 12H3M17 18H3"/>
-                </svg>
-              </button>
-              <button type="button" class="tool-icon-btn align-btn tight" id="align-center" title="Align center">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M21 6H3M17 12H7M19 18H5"/>
-                </svg>
-              </button>
-              <button type="button" class="tool-icon-btn align-btn tight" id="align-right" title="Align right">
-                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M21 6H3M21 12H9M21 18H7"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="tool-popovers tool-popover-layer" id="tool-popover-layer">
-            <section class="editor-popover" id="editor-popover-text" hidden>
-              <label class="popover-field" for="popover-text-input">
-                <span class="popover-label">Text</span>
-                <input id="popover-text-input" class="popover-input" type="text" placeholder="Edit selected text">
-              </label>
-              <button type="button" class="popover-apply-btn" id="popover-apply-text">Apply</button>
-            </section>
-            <section class="editor-popover" id="editor-popover-size" hidden>
-              <label class="popover-field" for="popover-size-input">
-                <span class="popover-label">Size</span>
-                <input id="popover-size-input" class="popover-input popover-number" type="number" min="8" max="180" step="1" value="24">
-              </label>
-              <button type="button" class="popover-apply-btn" id="popover-apply-size">Apply</button>
-            </section>
-            <section class="editor-popover" id="editor-popover-text-color" hidden>
-              <label class="popover-field" for="popover-text-color-input">
-                <span class="popover-label">Text color</span>
-                <input id="popover-text-color-input" class="popover-color" type="color" value="#111111">
-              </label>
-            </section>
-            <section class="editor-popover" id="editor-popover-bg-color" hidden>
-              <label class="popover-field" for="popover-bg-color-input">
-                <span class="popover-label">Background</span>
-                <input id="popover-bg-color-input" class="popover-color" type="color" value="#ffffff">
-              </label>
-            </section>
-          </div>
-          <div class="hint" id="editor-hint">Drag on the slide to add red pending bboxes. Press Enter to run.</div>
-        </div>
         <div class="slide-stage" id="slide-stage">
           <div class="slide-wrapper" id="slide-wrapper">
             <button class="clear-overlay-btn" id="btn-clear-bboxes" title="Clear all boxes on current slide">Clear Boxes</button>
@@ -1461,6 +1560,118 @@
           </div>
         </div>
       </div>
+
+      <aside class="editor-sidebar" id="editor-sidebar">
+        <div class="sidebar-mode-tabs">
+          <button type="button" class="sidebar-mode-tab active" id="tool-mode-draw" aria-pressed="true">
+            <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM9 5v14M15 5v14M5 9h14M5 15h14"/></svg>
+            BBox
+          </button>
+          <button type="button" class="sidebar-mode-tab" id="tool-mode-select" aria-pressed="false">
+            <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 4 11 8-5 1.2L14.6 20l-2.5 1-2.6-6.8L6 15z"/></svg>
+            Select
+          </button>
+        </div>
+
+        <div class="sidebar-body" id="sidebar-body">
+          <div class="sidebar-panel" id="bbox-toolbar">
+            <div class="sidebar-section">
+              <span class="sidebar-label" id="bbox-count">0 pending · 0 review</span>
+              <div class="context-chips" id="context-chip-list"></div>
+            </div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Prompt</span>
+              <textarea id="prompt-input" class="sidebar-textarea" placeholder="Describe the edit for red bboxes..." rows="3"></textarea>
+            </div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Model</span>
+              <select id="model-select" class="model-select">
+                <option value="gpt-5.3-codex">gpt-5.3-codex</option>
+                <option value="gpt-5.3-codex-spark">gpt-5.3-codex-spark</option>
+              </select>
+            </div>
+            <button class="sidebar-btn sidebar-btn-primary" id="btn-send" title="Run Codex">
+              <svg class="btn-send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 11.2 19.6 4.4c.8-.3 1.7.5 1.4 1.4l-6.8 16.2c-.3.8-1.4.9-1.9.1L9.2 16l-6.1-3.1c-.8-.5-.7-1.6.3-1.7Zm5.1 3.6 3.2 1.6 4.9-11.7-11.7 4.9 3.6 1.8 6.2-3.7c.4-.2.8.1.6.6l-6.8 6.5Z"/></svg>
+              Run Codex
+            </button>
+          </div>
+
+          <div class="sidebar-panel" id="select-toolbar" hidden>
+            <div class="sidebar-section">
+              <div class="sidebar-object-card" id="selected-object-mini" style="display:none">
+                <span class="mini-tag" id="mini-tag"></span>
+                <span id="mini-text"></span>
+              </div>
+              <span class="select-empty-hint" id="select-empty-hint">Click an object on the slide</span>
+            </div>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Text</span>
+              <div class="sidebar-field-row">
+                <input id="popover-text-input" class="sidebar-input" type="text" placeholder="Edit text...">
+                <button type="button" class="sidebar-btn-sm" id="popover-apply-text">Set</button>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Color</span>
+              <div class="sidebar-color-row">
+                <label class="sidebar-color-field">
+                  <span class="sidebar-color-label">Text</span>
+                  <input id="popover-text-color-input" class="sidebar-color" type="color" value="#111111">
+                </label>
+                <label class="sidebar-color-field">
+                  <span class="sidebar-color-label">Bg</span>
+                  <input id="popover-bg-color-input" class="sidebar-color" type="color" value="#ffffff">
+                </label>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Size</span>
+              <div class="sidebar-field-row">
+                <input id="popover-size-input" class="sidebar-input sidebar-number" type="number" min="8" max="180" step="1" value="24">
+                <span class="sidebar-unit">px</span>
+                <button type="button" class="sidebar-btn-sm" id="popover-apply-size">Set</button>
+              </div>
+            </div>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Style</span>
+              <div class="sidebar-icon-grid">
+                <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-bold" title="Bold (⌘B)">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 12a4 4 0 0 0 0-8H6v8"/><path d="M15 20a4 4 0 0 0 0-8H6v8"/></svg>
+                </button>
+                <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-italic" title="Italic (⌘I)">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg>
+                </button>
+                <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-underline" title="Underline (⌘U)">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/></svg>
+                </button>
+                <button type="button" class="tool-icon-btn style-toggle tight" id="toggle-strike" title="Strikethrough">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><path d="M4 12h16"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <span class="sidebar-label">Align</span>
+              <div class="sidebar-icon-grid">
+                <button type="button" class="tool-icon-btn align-btn tight" id="align-left" title="Align left">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H3M15 12H3M17 18H3"/></svg>
+                </button>
+                <button type="button" class="tool-icon-btn align-btn tight" id="align-center" title="Align center">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H3M17 12H7M19 18H5"/></svg>
+                </button>
+                <button type="button" class="tool-icon-btn align-btn tight" id="align-right" title="Align right">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 6H3M21 12H9M21 18H7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-hint" id="editor-hint">
+          Drag on the slide to add red bboxes. Enter to run.
+        </div>
+      </aside>
     </div>
 
     <div class="status-bar">
@@ -1501,7 +1712,6 @@
     let defaultModel = DEFAULT_MODELS[0];
     let selectedModel = defaultModel;
     let toolMode = TOOL_MODE_DRAW;
-    let openPopover = '';
     let hoveredObjectXPath = '';
 
     const directSaveStateBySlide = new Map();
@@ -1518,7 +1728,6 @@
 
     const slideIframe = $('#slide-iframe');
     const slidePanel = $('#slide-panel');
-    const slideToolbox = $('#slide-toolbox');
     const slideStage = $('#slide-stage');
     const slideWrapper = $('#slide-wrapper');
     const bboxLayer = $('#bbox-layer');
@@ -1531,10 +1740,7 @@
     const toolModeSelectBtn = $('#tool-mode-select');
     const bboxToolbar = $('#bbox-toolbar');
     const selectToolbar = $('#select-toolbar');
-    const selectActionText = $('#select-action-text');
-    const selectActionTextColor = $('#select-action-text-color');
-    const selectActionBgColor = $('#select-action-bg-color');
-    const selectActionSize = $('#select-action-size');
+    // Inline sidebar inputs (no popover trigger buttons needed)
     const toggleBold = $('#toggle-bold');
     const toggleItalic = $('#toggle-italic');
     const toggleUnderline = $('#toggle-underline');
@@ -1542,17 +1748,10 @@
     const alignLeft = $('#align-left');
     const alignCenter = $('#align-center');
     const alignRight = $('#align-right');
-    const toolPopoverLayer = $('#tool-popover-layer');
-    const popoverText = $('#editor-popover-text');
     const popoverTextInput = $('#popover-text-input');
     const popoverApplyText = $('#popover-apply-text');
-    const popoverTextColor = $('#editor-popover-text-color');
     const popoverTextColorInput = $('#popover-text-color-input');
-
-    const popoverBgColor = $('#editor-popover-bg-color');
     const popoverBgColorInput = $('#popover-bg-color-input');
-
-    const popoverSize = $('#editor-popover-size');
     const popoverSizeInput = $('#popover-size-input');
     const popoverApplySize = $('#popover-apply-size');
 
@@ -1569,8 +1768,6 @@
     const miniTag = $('#mini-tag');
     const miniText = $('#mini-text');
     const selectEmptyHint = $('#select-empty-hint');
-    const textColorIndicator = $('#text-color-indicator');
-    const bgColorIndicator = $('#bg-color-indicator');
 
     const statusDot = $('#status-dot');
     const statusConn = $('#status-connection');
@@ -2237,102 +2434,13 @@
       };
     }
 
-    function getPopoverElement(popoverId) {
-      if (popoverId === POPOVER_TEXT) return popoverText;
-      if (popoverId === POPOVER_TEXT_COLOR) return popoverTextColor;
-      if (popoverId === POPOVER_BG_COLOR) return popoverBgColor;
-      if (popoverId === POPOVER_SIZE) return popoverSize;
-      return null;
-    }
-
-    function getPopoverTrigger(popoverId) {
-      if (popoverId === POPOVER_TEXT) return selectActionText;
-      if (popoverId === POPOVER_TEXT_COLOR) return selectActionTextColor;
-      if (popoverId === POPOVER_BG_COLOR) return selectActionBgColor;
-      if (popoverId === POPOVER_SIZE) return selectActionSize;
-      return null;
-    }
-
-    function syncPopoverInputs(snapshot) {
-      popoverTextInput.value = snapshot?.textValue || '';
+    function syncInlineInputs(snapshot) {
+      if (!document.activeElement || !document.activeElement.closest?.('#select-toolbar')) {
+        popoverTextInput.value = snapshot?.textValue || '';
+        popoverSizeInput.value = String(snapshot?.fontSize || 24);
+      }
       popoverTextColorInput.value = snapshot?.textColor || '#111111';
       popoverBgColorInput.value = snapshot?.backgroundColor || '#ffffff';
-      popoverSizeInput.value = String(snapshot?.fontSize || 24);
-    }
-
-    function hidePopover() {
-      openPopover = '';
-      [popoverText, popoverTextColor, popoverBgColor, popoverSize].forEach((popover) => {
-        if (!popover) return;
-        popover.hidden = true;
-      });
-      setToggleActive(selectActionText, false);
-      setToggleActive(selectActionTextColor, false);
-      setToggleActive(selectActionBgColor, false);
-      setToggleActive(selectActionSize, false);
-    }
-
-    function positionPopover(popover, trigger) {
-      if (!popover || !trigger || !toolPopoverLayer) return;
-      const layerRect = toolPopoverLayer.getBoundingClientRect();
-      const triggerRect = trigger.getBoundingClientRect();
-      popover.hidden = false;
-      popover.style.visibility = 'hidden';
-      popover.style.left = '0px';
-      popover.style.top = '0px';
-
-      const popRect = popover.getBoundingClientRect();
-      const maxLeft = Math.max(12, layerRect.width - popRect.width - 12);
-      const left = clamp(
-        Math.round(triggerRect.left - layerRect.left + (triggerRect.width - popRect.width) / 2),
-        12,
-        maxLeft,
-      );
-      const top = Math.max(8, Math.round(triggerRect.bottom - layerRect.top + 10));
-
-      popover.style.left = `${left}px`;
-      popover.style.top = `${top}px`;
-      popover.style.visibility = '';
-    }
-
-    function togglePopover(popoverId) {
-      const selected = toolMode === TOOL_MODE_SELECT ? getSelectedObjectElement() : null;
-      const capabilities = getSelectedObjectCapabilities(selected);
-      const enabled = (
-        (popoverId === POPOVER_TEXT && capabilities.textEditable)
-        || (popoverId === POPOVER_TEXT_COLOR && capabilities.textColorEditable)
-        || (popoverId === POPOVER_BG_COLOR && capabilities.backgroundEditable)
-        || (popoverId === POPOVER_SIZE && capabilities.sizeEditable)
-      );
-
-      if (!enabled) return;
-      if (openPopover === popoverId) {
-        hidePopover();
-        return;
-      }
-
-      const snapshot = selected ? readSelectedObjectStyleState(selected) : null;
-      syncPopoverInputs(snapshot);
-      hidePopover();
-      openPopover = popoverId;
-
-      const popover = getPopoverElement(popoverId);
-      const trigger = getPopoverTrigger(popoverId);
-      if (!popover || !trigger) return;
-
-      positionPopover(popover, trigger);
-      setToggleActive(trigger, true);
-      if (popoverId === POPOVER_TEXT) {
-        popoverTextInput.focus();
-        popoverTextInput.select();
-      } else if (popoverId === POPOVER_TEXT_COLOR) {
-        popoverTextColorInput.focus();
-      } else if (popoverId === POPOVER_BG_COLOR) {
-        popoverBgColorInput.focus();
-      } else if (popoverId === POPOVER_SIZE) {
-        popoverSizeInput.focus();
-        popoverSizeInput.select();
-      }
     }
 
     function updateObjectEditorControls() {
@@ -2362,17 +2470,13 @@
         }
       }
 
-      if (textColorIndicator) {
-        textColorIndicator.style.background = snapshot?.textColor || '#888';
-      }
-      if (bgColorIndicator) {
-        bgColorIndicator.style.background = snapshot?.backgroundColor || '#888';
-      }
+      popoverTextInput.disabled = !capabilities.textEditable;
+      popoverApplyText.disabled = !capabilities.textEditable;
+      popoverTextColorInput.disabled = !capabilities.textColorEditable;
+      popoverBgColorInput.disabled = !capabilities.backgroundEditable;
+      popoverSizeInput.disabled = !capabilities.sizeEditable;
+      popoverApplySize.disabled = !capabilities.sizeEditable;
 
-      setControlEnabled(selectActionText, capabilities.textEditable);
-      setControlEnabled(selectActionTextColor, capabilities.textColorEditable);
-      setControlEnabled(selectActionBgColor, capabilities.backgroundEditable);
-      setControlEnabled(selectActionSize, capabilities.sizeEditable);
       setControlEnabled(toggleBold, capabilities.emphasisEditable);
       setControlEnabled(toggleItalic, capabilities.emphasisEditable);
       setControlEnabled(toggleUnderline, capabilities.emphasisEditable);
@@ -2389,23 +2493,7 @@
       setToggleActive(alignCenter, capabilities.alignEditable && snapshot?.textAlign === 'center');
       setToggleActive(alignRight, capabilities.alignEditable && (snapshot?.textAlign === 'right' || snapshot?.textAlign === 'end'));
 
-      if (!selected) {
-        syncPopoverInputs(null);
-        hidePopover();
-        return;
-      }
-
-      syncPopoverInputs(snapshot);
-      if (openPopover) {
-        const popover = getPopoverElement(openPopover);
-        const trigger = getPopoverTrigger(openPopover);
-        if (popover && trigger && !trigger.disabled) {
-          positionPopover(popover, trigger);
-          setToggleActive(trigger, true);
-        } else {
-          hidePopover();
-        }
-      }
+      syncInlineInputs(snapshot);
     }
 
     function renderObjectSelection() {
@@ -2429,9 +2517,8 @@
       toolModeDrawBtn.setAttribute('aria-pressed', isDraw ? 'true' : 'false');
       toolModeSelectBtn.setAttribute('aria-pressed', !isDraw ? 'true' : 'false');
       editorHint.textContent = isDraw
-        ? 'Drag on the slide to add red pending bboxes. Press Enter or Cmd/Ctrl+Enter to run.'
-        : 'Click an object to edit. Shortcuts: \u2318B bold \u00b7 \u2318I italic \u00b7 \u2318U underline';
-      hidePopover();
+        ? 'Drag on the slide to add red bboxes. Cmd/Ctrl+Enter to run.'
+        : 'Click an object to edit. \u2318B bold \u00b7 \u2318I italic \u00b7 \u2318U underline';
       renderBboxes();
       renderObjectSelection();
       updateObjectEditorControls();
@@ -2445,9 +2532,6 @@
       drawBox.style.display = 'none';
       if (toolMode !== TOOL_MODE_SELECT) {
         hoveredObjectXPath = '';
-      }
-      if (toolMode !== TOOL_MODE_SELECT) {
-        hidePopover();
       }
       updateToolModeUI();
       setStatus(toolMode === TOOL_MODE_SELECT ? 'Select mode enabled.' : 'BBox draw mode enabled.');
@@ -2995,40 +3079,20 @@
       updateSendState();
     });
 
-    selectActionText.addEventListener('click', () => {
-      togglePopover(POPOVER_TEXT);
-    });
-
-    selectActionTextColor.addEventListener('click', () => {
-      togglePopover(POPOVER_TEXT_COLOR);
-    });
-
-    selectActionBgColor.addEventListener('click', () => {
-      togglePopover(POPOVER_BG_COLOR);
-    });
-
-    selectActionSize.addEventListener('click', () => {
-      togglePopover(POPOVER_SIZE);
-    });
-
     popoverApplyText.addEventListener('click', () => {
-      if (selectActionText.disabled) return;
+      if (popoverApplyText.disabled) return;
       mutateSelectedObject((el) => {
         el.textContent = popoverTextInput.value;
       }, 'Object text updated and saved.', { delay: 120 });
-      hidePopover();
     });
 
     popoverApplySize.addEventListener('click', () => {
-      if (selectActionSize.disabled) return;
+      if (popoverApplySize.disabled) return;
       const size = clamp(Number.parseInt(popoverSizeInput.value || '24', 10) || 24, 8, 180);
       mutateSelectedObject((el) => {
         el.style.fontSize = `${size}px`;
       }, 'Object font size updated and saved.');
-      hidePopover();
     });
-
-    // Color popovers apply in real-time via input event (no Apply button)
 
     popoverTextInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -3047,14 +3111,14 @@
     });
 
     popoverTextColorInput.addEventListener('input', () => {
-      if (selectActionTextColor.disabled) return;
+      if (popoverTextColorInput.disabled) return;
       mutateSelectedObject((el) => {
         el.style.color = popoverTextColorInput.value;
       }, 'Text color updated.', { delay: 300 });
     });
 
     popoverBgColorInput.addEventListener('input', () => {
-      if (selectActionBgColor.disabled) return;
+      if (popoverBgColorInput.disabled) return;
       mutateSelectedObject((el) => {
         el.style.backgroundColor = popoverBgColorInput.value;
       }, 'Background color updated.', { delay: 300 });
@@ -3116,17 +3180,14 @@
         if (key === 'u') { event.preventDefault(); if (!toggleUnderline.disabled) toggleUnderline.click(); return; }
       }
 
-      if (
-        ((event.ctrlKey || event.metaKey) && event.key === 'Enter')
-        || (inPromptField && event.key === 'Enter')
-      ) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
         applyChanges();
         return;
       }
 
       if (event.key === 'Escape') {
-        hidePopover();
+        if (document.activeElement) document.activeElement.blur();
         return;
       }
 
@@ -3157,12 +3218,7 @@
       updateSendState();
     });
 
-    document.addEventListener('mousedown', (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (target.closest('#slide-toolbox') || target.closest('#tool-popover-layer')) return;
-      hidePopover();
-    });
+    // No popover dismiss needed — controls are inline in sidebar
 
     // -------------------------------------------------------------------------
     // Init
