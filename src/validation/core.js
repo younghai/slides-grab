@@ -597,7 +597,53 @@ export function formatValidationFailureForExport(result, exportLabel = 'Export')
   return `${exportLabel} blocked by slide validation. Run \`slides-grab validate --slides-dir <path>\` for full diagnostics.${suffix}`;
 }
 
-export async function ensureSlidesPassValidation(slidesDir, { exportLabel = 'Export' } = {}) {
+const EXPORT_BLOCKING_IMAGE_CONTRACT_CODES = new Set([
+  'absolute-filesystem-image-path',
+  'missing-local-asset',
+  'missing-local-background-asset',
+  'root-relative-image-path',
+  'unsupported-background-image',
+]);
+
+function filterExportBlockingSlides(result, shouldBlockIssue) {
+  const slides = result.slides
+    .map((slide) => {
+      const critical = slide.critical.filter(shouldBlockIssue);
+      const warning = slide.warning.filter(shouldBlockIssue);
+      const criticalCount = critical.length;
+      const warningCount = warning.length;
+      return {
+        ...slide,
+        status: criticalCount > 0 ? 'fail' : 'pass',
+        critical,
+        warning,
+        summary: {
+          ...slide.summary,
+          criticalCount,
+          warningCount,
+        },
+      };
+    })
+    .filter((slide) => slide.critical.length > 0 || slide.warning.length > 0);
+
+  return {
+    ...result,
+    slides,
+    summary: summarizeSlides(slides),
+  };
+}
+
+export function isBlockingImageContractIssue(issue) {
+  return EXPORT_BLOCKING_IMAGE_CONTRACT_CODES.has(issue?.code);
+}
+
+export async function ensureSlidesPassValidation(
+  slidesDir,
+  {
+    exportLabel = 'Export',
+    shouldBlockIssue = isBlockingImageContractIssue,
+  } = {},
+) {
   const slideFiles = await findSlideFiles(slidesDir);
   if (slideFiles.length === 0) {
     throw new Error(`No slide-*.html files found in: ${slidesDir}`);
@@ -610,10 +656,11 @@ export async function ensureSlidesPassValidation(slidesDir, { exportLabel = 'Exp
   try {
     const slides = await scanSlides(page, slidesDir, slideFiles);
     const result = createValidationResult(slides);
-    if (result.summary.failedSlides > 0) {
-      throw new Error(formatValidationFailureForExport(result, exportLabel));
+    const blockingResult = filterExportBlockingSlides(result, shouldBlockIssue);
+    if (blockingResult.summary.failedSlides > 0) {
+      throw new Error(formatValidationFailureForExport(blockingResult, exportLabel));
     }
-    return result;
+    return blockingResult;
   } finally {
     await browser.close();
   }
