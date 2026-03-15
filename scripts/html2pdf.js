@@ -231,9 +231,10 @@ function chooseSlideFrame(metrics) {
 
 export async function waitForSlideRenderReady(page, options = {}) {
   const settleMs = normalizeDimension(options.settleMs ?? RENDER_SETTLE_MS, RENDER_SETTLE_MS);
+  const shouldRunReadySignal = options.runReadySignal !== false;
 
   await page.waitForLoadState('load');
-  await page.evaluate(async ({ settleMs: settleDelay }) => {
+  await page.evaluate(async ({ settleMs: settleDelay, runReadySignal }) => {
     if (document.fonts?.ready) {
       await document.fonts.ready.catch(() => {});
     }
@@ -257,28 +258,30 @@ export async function waitForSlideRenderReady(page, options = {}) {
       }),
     );
 
-    const readySignal =
-      window.__slidesGrabReady ??
-      window.__SLIDES_GRAB_READY ??
-      window.slidesGrabReady ??
-      document.documentElement?.dataset?.slidesGrabReady ??
-      document.body?.dataset?.slidesGrabReady;
+    if (runReadySignal) {
+      const readySignal =
+        window.__slidesGrabReady ??
+        window.__SLIDES_GRAB_READY ??
+        window.slidesGrabReady ??
+        document.documentElement?.dataset?.slidesGrabReady ??
+        document.body?.dataset?.slidesGrabReady;
 
-    if (typeof readySignal === 'function') {
-      await readySignal();
-    } else if (readySignal && typeof readySignal.then === 'function') {
-      await readySignal.catch(() => {});
-    } else if (readySignal === 'pending') {
-      await new Promise((resolve) => {
-        const listener = () => resolve();
-        window.addEventListener('slides-grab-ready', listener, { once: true });
-        setTimeout(resolve, 5000);
-      });
+      if (typeof readySignal === 'function') {
+        await readySignal();
+      } else if (readySignal && typeof readySignal.then === 'function') {
+        await readySignal.catch(() => {});
+      } else if (readySignal === 'pending') {
+        await new Promise((resolve) => {
+          const listener = () => resolve();
+          window.addEventListener('slides-grab-ready', listener, { once: true });
+          setTimeout(resolve, 5000);
+        });
+      }
     }
 
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     await new Promise((resolve) => setTimeout(resolve, settleDelay));
-  }, { settleMs });
+  }, { settleMs, runReadySignal: shouldRunReadySignal });
 }
 
 export async function detectSlideFrame(page) {
@@ -384,6 +387,8 @@ export async function isolateSlideFrame(page, slideFrame) {
     translatedContent.style.width = `${Math.max(width + x, body.scrollWidth, document.documentElement.scrollWidth)}px`;
     translatedContent.style.height = `${Math.max(height + y, body.scrollHeight, document.documentElement.scrollHeight)}px`;
 
+    // Preserve the original node order inside one translated subtree so overlap
+    // paint order and live DOM state survive both capture and print exports.
     const childNodes = Array.from(body.childNodes);
     body.replaceChildren(clipFrame);
     clipFrame.append(translatedContent);
@@ -461,7 +466,7 @@ export async function renderSlideToPdf(page, slideFile, slidesDir, options = {})
   const slideFrame = await detectSlideFrame(page);
   const normalizedSlideFrame = await isolateSlideFrame(page, slideFrame);
   await normalizeBodyToSlideFrame(page, normalizedSlideFrame);
-  await waitForSlideRenderReady(page, options);
+  await waitForSlideRenderReady(page, { ...options, runReadySignal: false });
 
   if (mode === 'capture') {
     const viewportSize = {
@@ -469,7 +474,7 @@ export async function renderSlideToPdf(page, slideFile, slidesDir, options = {})
       height: normalizeDimension(normalizedSlideFrame.height, FALLBACK_SLIDE_SIZE.height),
     };
     await page.setViewportSize(viewportSize);
-    await waitForSlideRenderReady(page, options);
+    await waitForSlideRenderReady(page, { ...options, runReadySignal: false });
     const pngBytes = await page.screenshot({
       type: 'png',
       clip: {
