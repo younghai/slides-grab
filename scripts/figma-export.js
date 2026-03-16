@@ -30,7 +30,8 @@ function printUsage() {
       '  --output <path>      Output PPTX file (default: <slides-dir>-figma.pptx)',
       '  -h, --help           Show this help message',
       '',
-      'Exports a Figma Slides importable PPTX using the existing html2pptx pipeline.',
+      'Exports an experimental / unstable Figma Slides importable PPTX using the existing html2pptx pipeline.',
+      'Treat both PPTX and Figma export as best-effort only.',
     ].join('\n'),
   );
   process.stdout.write('\n');

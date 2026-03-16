@@ -1,7 +1,7 @@
 {
   "name": "slides-grab",
   "version": "1.0.0",
-  "description": "Agent-first presentation framework — plan, design, and visually edit HTML slides with Claude Code or Codex, then export to PPTX/PDF",
+  "description": "Agent-first presentation framework — plan, design, and visually edit HTML slides with Claude Code or Codex, then export to PDF or experimental/unstable PPTX/Figma formats",
   "license": "MIT",
   "author": "vkehfdl1",
   "repository": {

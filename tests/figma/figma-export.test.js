@@ -34,6 +34,7 @@ test('normalizeFigmaOutput appends .pptx when omitted', () => {
 test('getFigmaImportCaveats returns user-facing warnings', () => {
   const caveats = getFigmaImportCaveats();
   assert.equal(caveats.length, 4);
+  assert.match(caveats[0], /experimental|unstable/i);
   assert.match(caveats[0], /best-effort/i);
   assert.match(caveats[1], /Pretendard/i);
 });
@@ -63,7 +64,7 @@ test('slides-grab help lists the figma command', () => {
   });
 
   assert.match(output, /\bfigma\b/);
-  assert.match(output, /Figma Slides importable PPTX/);
+  assert.match(output, /experimental[\s\S]*Figma[\s\S]*Slides importable PPTX/i);
 });
 
 test('figma command help documents manual import intent', () => {
@@ -74,6 +75,7 @@ test('figma command help documents manual import intent', () => {
 
   assert.match(output, /Output PPTX file \(default: <slides-dir>-figma\.pptx\)/);
   assert.match(output, /slides-grab figma/);
+  assert.match(output, /experimental|unstable/i);
   assert.match(output, /Manual import:/);
   assert.match(output, new RegExp(getFigmaManualImportInstructions().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(output, /Figma import caveats:/);

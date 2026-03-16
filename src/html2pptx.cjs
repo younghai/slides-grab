@@ -1,5 +1,5 @@
 /**
- * html2pptx - Convert HTML slide to pptxgenjs slide with positioned elements
+ * html2pptx - Experimental / unstable HTML-to-pptxgenjs conversion for slide exports
  *
  * USAGE:
  *   const pptx = new pptxgen();
@@ -11,7 +11,7 @@
  *   await pptx.writeFile('output.pptx');
  *
  * FEATURES:
- *   - Converts HTML to PowerPoint with accurate positioning
+ *   - Best-effort conversion from HTML to PowerPoint
  *   - Supports text, images, shapes, and bullet lists
  *   - Extracts placeholder elements (class="placeholder") with positions
  *   - Handles CSS gradients, borders, and margins

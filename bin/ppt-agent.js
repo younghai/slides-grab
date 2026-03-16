@@ -15,7 +15,8 @@ const packageRoot = resolve(__dirname, '..');
 const packageJson = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf-8'));
 const figmaHelpText = [
   '',
-  'Creates a PowerPoint file tuned for Figma Slides manual import.',
+  'Creates an experimental / unstable PowerPoint file tuned for Figma Slides manual import.',
+  'Treat both PPTX and Figma export as best-effort only.',
   '',
   'Manual import:',
   `  ${getFigmaManualImportInstructions()}`,
@@ -102,7 +103,7 @@ program
 
 program
   .command('convert')
-  .description('Convert slide HTML files to PPTX')
+  .description('Convert slide HTML files to experimental / unstable PPTX')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file')
   .action(async (options = {}) => {
@@ -132,7 +133,7 @@ program
 
 program
   .command('figma')
-  .description('Export a Figma Slides importable PPTX')
+  .description('Export an experimental / unstable Figma Slides importable PPTX')
   .helpOption('-h, --help', 'Show this help message')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file (default: <slides-dir>-figma.pptx)')

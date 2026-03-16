@@ -1,6 +1,6 @@
 ---
 name: presentation-skill
-description: End-to-end presentation workflow. Use when making a full presentation from scratch — planning, designing slides, editing, and exporting.
+description: End-to-end presentation workflow. Use when making a full presentation from scratch — planning, designing slides, editing, and exporting. PDF is preferred; PPTX/Figma export is experimental / unstable.
 ---
 
 # Presentation Skill - Full Workflow Orchestrator
@@ -42,7 +42,7 @@ Use **design-skill** (`.claude/skills/design-skill/SKILL.md`).
 Use **pptx-skill** (`.claude/skills/pptx-skill/SKILL.md`).
 
 1. Confirm user wants conversion.
-2. Export to PPTX: `slides-grab convert --slides-dir <path> --output <name>.pptx`
+2. Export to PPTX: `slides-grab convert --slides-dir <path> --output <name>.pptx` (**experimental / unstable**)
 3. Export to PDF (if requested): `slides-grab pdf --slides-dir <path> --output <name>.pdf`
 4. Report results.
 
@@ -54,3 +54,4 @@ Use **pptx-skill** (`.claude/skills/pptx-skill/SKILL.md`).
 2. **Get explicit user approval** before advancing to the next stage.
 3. **Read each stage's SKILL.md** for detailed rules — this skill only orchestrates.
 4. **Use `decks/<deck-name>/`** as the slides workspace for multi-deck projects.
+5. **Call out export risk clearly**: PPTX and Figma export are experimental / unstable and should be described as best-effort output.

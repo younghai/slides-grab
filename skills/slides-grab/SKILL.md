@@ -1,8 +1,8 @@
 ---
 name: slides-grab
-description: End-to-end presentation workflow for Codex. Use when making a full presentation from scratch — planning, designing slides, editing, and exporting.
+description: End-to-end presentation workflow for Codex. Use when making a full presentation from scratch — planning, designing slides, editing, and exporting. PDF is preferred; PPTX/Figma export is experimental / unstable.
 metadata:
-  short-description: Full pipeline from topic to PPTX/PDF
+  short-description: Full pipeline from topic to PDF + experimental / unstable PPTX/Figma export
 ---
 
 # slides-grab Skill (Codex) - Full Workflow Orchestrator
@@ -44,7 +44,7 @@ Use **slides-grab-design** (`skills/slides-grab-design/SKILL.md`).
 Use **slides-grab-export** (`skills/slides-grab-export/SKILL.md`).
 
 1. Confirm user wants conversion.
-2. Export to PPTX: `slides-grab convert --slides-dir <path> --output <name>.pptx`
+2. Export to PPTX: `slides-grab convert --slides-dir <path> --output <name>.pptx` (**experimental / unstable**)
 3. Export to PDF (if requested): `slides-grab pdf --slides-dir <path> --output <name>.pdf`
 4. Report results.
 
@@ -56,4 +56,5 @@ Use **slides-grab-export** (`skills/slides-grab-export/SKILL.md`).
 2. **Get explicit user approval** before advancing to the next stage.
 3. **Read each stage's SKILL.md** for detailed rules — this skill only orchestrates.
 4. **Use `decks/<deck-name>/`** as the slides workspace for multi-deck projects.
-5. For full design constraints, refer to `.claude/skills/design-skill/SKILL.md`.
+5. **Call out export risk clearly**: PPTX and Figma export are experimental / unstable and must be described as best-effort output.
+6. For full design constraints, refer to `.claude/skills/design-skill/SKILL.md`.

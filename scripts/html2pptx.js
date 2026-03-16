@@ -23,6 +23,8 @@ function printUsage() {
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
       `  --output <path>      Output PPTX file (default: ${DEFAULT_OUTPUT})`,
       '  -h, --help           Show this help message',
+      '',
+      'Experimental / unstable PPTX export. Treat output as best-effort only.',
     ].join('\n'),
   );
   process.stdout.write('\n');

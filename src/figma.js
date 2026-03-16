@@ -25,7 +25,7 @@ export function normalizeFigmaOutput(slidesDir, output) {
 
 export function getFigmaImportCaveats() {
   return [
-    'Figma imports PPTX best-effort. Complex layouts, shadows, and grouped elements can shift or flatten.',
+    'Figma export is experimental / unstable. Figma imports PPTX best-effort, and complex layouts, shadows, and grouped elements can shift or flatten.',
     'Fonts are resolved inside Figma. If Pretendard is unavailable there, expect substitution and reflow.',
     'Import is one-way. Re-importing creates a new Figma Slides file instead of updating the existing one.',
     'Review every imported slide, especially chart-heavy slides and text near slide edges.',

@@ -9,7 +9,7 @@ Simple things like text, size, or bold can still be edited manually, just like i
 
 <p align="center">
 The whole slides are HTML & CSS, the programming langauge (which is not) that outperformed by AI agents.<br>
-So the slides are beautiful, easily editable by AI agents, and can be converted to pdf and pptx.
+So the slides are beautiful, easily editable by AI agents, and can be converted to PDF or to experimental / unstable PPTX formats.
 </p>
 
 <p align="center">
@@ -56,7 +56,7 @@ There are many AI tools that generate slide HTML. Almost none let you **visually
 - **Plan** — Agent creates a structured slide outline from your topic/files
 - **Design** — Agent generates each slide as a self-contained HTML file
 - **Edit** — Browser-based editor with bbox selection, direct text editing, and agent-powered rewrites
-- **Export** — One command to PPTX or PDF
+- **Export** — One command to PDF, plus experimental / unstable PPTX or Figma-export flows
 
 ## CLI Commands
 
@@ -68,8 +68,8 @@ On a fresh clone, only `--help`, `list-templates`, and `list-themes` work withou
 slides-grab edit              # Launch visual slide editor
 slides-grab build-viewer      # Build single-file viewer.html
 slides-grab validate          # Validate slide HTML (Playwright-based)
-slides-grab convert           # Export to PPTX
-slides-grab figma             # Export a Figma Slides importable PPTX
+slides-grab convert           # Export to experimental / unstable PPTX
+slides-grab figma             # Export an experimental / unstable Figma Slides importable PPTX
 slides-grab pdf               # Export PDF in capture mode (default)
 slides-grab pdf --mode print  # Export searchable/selectable text PDF
 slides-grab list-templates    # Show available slide templates
@@ -102,13 +102,15 @@ slides-grab convert    --slides-dir decks/my-deck --output decks/my-deck.pptx
 slides-grab figma      --slides-dir decks/my-deck --output decks/my-deck-figma.pptx
 ```
 
+> **Warning:** `slides-grab convert` and `slides-grab figma` are currently **experimental / unstable**. Expect best-effort output, layout shifts, and manual cleanup in PowerPoint or Figma.
+
 ### Figma Workflow
 
 ```bash
 slides-grab figma --slides-dir decks/my-deck --output decks/my-deck-figma.pptx
 ```
 
-This command reuses the HTML to PPTX pipeline and emits a `.pptx` deck intended for manual import into Figma Slides via `Import`. It does not upload to Figma directly.
+This command reuses the HTML to PPTX pipeline and emits a `.pptx` deck intended for manual import into Figma Slides via `Import`. It does not upload to Figma directly. The Figma export path is **experimental / unstable** and should be treated as best-effort only.
 
 ## Installation Guides
 

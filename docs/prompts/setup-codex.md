@@ -33,7 +33,7 @@ This project uses a 3-stage skill workflow under `skills/`:
 |-------|-------|-------------|
 | 1. Plan | `skills/slides-grab-plan/SKILL.md` | Create slide-outline.md, get user approval |
 | 2. Design | `skills/slides-grab-design/SKILL.md` | Generate slide HTML files |
-| 3. Export | `skills/slides-grab-export/SKILL.md` | Convert to PPTX/PDF |
+| 3. Export | `skills/slides-grab-export/SKILL.md` | Convert to PDF + experimental / unstable PPTX/Figma |
 
 Or use the integrated skill `skills/slides-grab/SKILL.md` to go through all stages end-to-end.
 
@@ -43,8 +43,8 @@ Or use the integrated skill `skills/slides-grab/SKILL.md` to go through all stag
 slides-grab edit --slides-dir <path>         # Visual editor
 slides-grab build-viewer --slides-dir <path> # Build viewer.html
 slides-grab validate --slides-dir <path>     # Validate slides
-slides-grab convert --slides-dir <path>      # Export PPTX
-slides-grab figma --slides-dir <path>        # Export Figma-importable PPTX
+slides-grab convert --slides-dir <path>      # Export experimental / unstable PPTX
+slides-grab figma --slides-dir <path>        # Export experimental / unstable Figma-importable PPTX
 slides-grab pdf --slides-dir <path>          # Export PDF in capture mode (default)
 slides-grab pdf --slides-dir <path> --mode print
 ```
