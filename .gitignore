@@ -29,6 +29,7 @@ Thumbs.db
 dist/
 build/
 *.log
+*.tgz
 
 # Python (if any)
 __pycache__/
@@ -53,6 +54,9 @@ decks/
 # Generated outlines and thumbnails
 slide-outline.md
 thumbnail-grid.png
+screenshots/
 
 # Internal state
 .ralph/
+.omx/
+.githubclaw/
