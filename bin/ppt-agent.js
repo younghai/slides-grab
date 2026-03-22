@@ -106,10 +106,14 @@ program
   .description('Convert slide HTML files to experimental / unstable PPTX')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file')
+  .option('--resolution <preset>', 'Raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p)')
   .action(async (options = {}) => {
     const args = ['--slides-dir', options.slidesDir];
     if (options.output) {
       args.push('--output', String(options.output));
+    }
+    if (options.resolution) {
+      args.push('--resolution', String(options.resolution));
     }
     await runCommand('convert.cjs', args);
   });
@@ -120,6 +124,7 @@ program
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PDF file')
   .option('--mode <mode>', 'PDF export mode: capture for visual fidelity, print for searchable text', 'capture')
+  .option('--resolution <preset>', 'Capture raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p in capture mode)')
   .action(async (options = {}) => {
     const args = ['--slides-dir', options.slidesDir];
     if (options.output) {
@@ -127,6 +132,9 @@ program
     }
     if (options.mode) {
       args.push('--mode', String(options.mode));
+    }
+    if (options.resolution) {
+      args.push('--resolution', String(options.resolution));
     }
     await runCommand('scripts/html2pdf.js', args);
   });

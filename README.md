@@ -69,8 +69,10 @@ slides-grab edit              # Launch visual slide editor
 slides-grab build-viewer      # Build single-file viewer.html
 slides-grab validate          # Validate slide HTML (Playwright-based)
 slides-grab convert           # Export to experimental / unstable PPTX
+slides-grab convert --resolution 2160p  # Higher-resolution raster PPTX export
 slides-grab figma             # Export an experimental / unstable Figma Slides importable PPTX
 slides-grab pdf               # Export PDF in capture mode (default)
+slides-grab pdf --resolution 2160p  # Higher-resolution image-backed PDF export
 slides-grab pdf --mode print  # Export searchable/selectable text PDF
 slides-grab list-templates    # Show available slide templates
 slides-grab list-themes       # Show available color themes
@@ -88,6 +90,8 @@ Slides should store local image files in `<slides-dir>/assets/` and reference th
 Run `slides-grab validate --slides-dir <path>` before export to catch missing local assets and discouraged path forms.
 
 `slides-grab pdf` now defaults to `--mode capture`, which rasterizes each rendered slide into the PDF for better visual fidelity. Use `--mode print` when searchable/selectable browser text matters more than pixel-perfect parity.
+
+`slides-grab pdf` and `slides-grab convert` now default to `2160p` / `4k` raster output for sharper exports. You can still override with `--resolution <preset>` using `720p`, `1080p`, `1440p`, `2160p`, or `4k` when you want smaller or faster artifacts.
 
 ### Multi-Deck Workflow
 
