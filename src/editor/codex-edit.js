@@ -31,6 +31,8 @@ const EDITOR_PPT_DESIGN_DUPLICATE_PATTERNS = [
   /content plan/i,
   /slide litmus check/i,
   /dominant visual anchor/i,
+  /cardless layouts/i,
+  /whitespace, alignment, scale, cropping, and contrast/i,
   /opening slides and section dividers like posters/i,
   /references\/beautiful-slide-defaults\.md/i,
 ];
