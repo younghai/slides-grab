@@ -91,6 +91,11 @@ test('buildCodexEditPrompt includes user prompt, bbox, and XPath targets', () =>
   assert.match(prompt, /Do not use non-body `background-image` for content imagery; use `<img>` instead\./);
   assert.match(prompt, /CSS gradients.*not supported in PowerPoint conversion/i);
   assert.match(prompt, /Never forget to build the viewer/i);
+  assert.match(prompt, /Edit only the requested slide HTML file among slide-\*\.html files\./);
+  assert.match(prompt, /Do not modify any other slide HTML files unless explicitly requested\./);
+  assert.match(prompt, /You may add or update supporting files required for the requested slide/i);
+  assert.match(prompt, /store it under <slides-dir>\/assets\/ and reference it from the requested slide as \.\/assets\/<file>/i);
+  assert.match(prompt, /Do not modify unrelated assets, shared resources, or generated files that are not required for the requested slide\./);
   assert.match(prompt, /Do not persist runtime-only editor\/viewer injections/);
 });
 
