@@ -246,11 +246,24 @@ function resolveRequestedOutputPath(output, assetsDir) {
     return resolve(trimmed);
   }
 
-  const normalized = trimmed
-    .replace(/^[.][\\/]/, '')
-    .replace(/^assets[\\/]/, '');
+  const isBareFileName = !/[\\/]/.test(trimmed);
+  if (isBareFileName) {
+    return resolve(assetsDir, trimmed);
+  }
 
-  return resolve(assetsDir, normalized);
+  if (/^(?:\.\/)?assets[\\/]/.test(trimmed)) {
+    const normalized = trimmed
+      .replace(/^[.][\\/]/, '')
+      .replace(/^assets[\\/]/, '');
+    return resolve(assetsDir, normalized);
+  }
+
+  const cwdRelativePath = resolve(trimmed);
+  if (ensureInsideDirectory(cwdRelativePath, assetsDir)) {
+    return cwdRelativePath;
+  }
+
+  return resolve(assetsDir, trimmed);
 }
 
 export function resolveNanoBananaOutputPath({

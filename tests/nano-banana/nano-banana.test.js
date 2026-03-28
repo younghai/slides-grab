@@ -101,6 +101,18 @@ test('resolveNanoBananaOutputPath keeps generated assets under the deck assets d
   );
 });
 
+test('resolveNanoBananaOutputPath preserves explicit cwd-relative deck asset paths', () => {
+  const target = resolveNanoBananaOutputPath({
+    slidesDir: path.resolve('decks/demo'),
+    prompt: 'test',
+    output: 'decks/demo/assets/robot-hero',
+    mimeType: 'image/png',
+  });
+
+  assert.match(target.outputPath, /decks\/demo\/assets\/robot-hero\.png$/);
+  assert.equal(target.relativeRef, './assets/robot-hero.png');
+});
+
 test('resolveNanoBananaOutputPath treats relative --output values as assets-relative paths', () => {
   const slidesDir = path.resolve('decks/demo');
   const target = resolveNanoBananaOutputPath({
@@ -112,6 +124,32 @@ test('resolveNanoBananaOutputPath treats relative --output values as assets-rela
 
   assert.equal(target.outputPath, path.join(slidesDir, 'assets', 'hero-image.png'));
   assert.equal(target.relativeRef, './assets/hero-image.png');
+});
+
+test('resolveNanoBananaOutputPath treats assets-prefixed relative output values as assets-relative paths', () => {
+  const slidesDir = path.resolve('decks/demo');
+  const target = resolveNanoBananaOutputPath({
+    slidesDir,
+    prompt: 'test',
+    output: 'assets/hero-image',
+    mimeType: 'image/png',
+  });
+
+  assert.equal(target.outputPath, path.join(slidesDir, 'assets', 'hero-image.png'));
+  assert.equal(target.relativeRef, './assets/hero-image.png');
+});
+
+test('resolveNanoBananaOutputPath keeps nested asset-relative output values inside assets', () => {
+  const slidesDir = path.resolve('decks/demo');
+  const target = resolveNanoBananaOutputPath({
+    slidesDir,
+    prompt: 'test',
+    output: 'nested/hero-image',
+    mimeType: 'image/png',
+  });
+
+  assert.equal(target.outputPath, path.join(slidesDir, 'assets', 'nested', 'hero-image.png'));
+  assert.equal(target.relativeRef, './assets/nested/hero-image.png');
 });
 
 test('buildNanoBananaApiRequest matches the documented Gemini image request shape', () => {
