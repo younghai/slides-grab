@@ -344,6 +344,18 @@ test('validate and html2pdf block unsupported video asset paths', async (t) => {
     const blockedBlob = await runNodeScript('scripts/html2pdf.js', ['--slides-dir', blobSlidesDir, '--output', path.join(workspace, 'blocked-blob.pdf')]);
     assert.equal(blockedBlob.code, 1);
     assert.match(blockedBlob.stderr, /unsupported-video-url-scheme/);
+
+    const blobPosterSlidesDir = await createVideoFixtureDeck(path.join(workspace, 'blob-poster'), {
+      posterSrc: 'blob:https://example.com/poster',
+    });
+    const blobPoster = await runNodeScript('scripts/validate-slides.js', ['--slides-dir', blobPosterSlidesDir, '--format', 'json-full']);
+    assert.equal(blobPoster.code, 1);
+    const blobPosterReport = JSON.parse(blobPoster.stdout);
+    assert.equal(blobPosterReport.slides[0].critical.some((issue) => issue.code === 'unsupported-image-url-scheme'), true);
+
+    const blockedBlobPoster = await runNodeScript('scripts/html2pdf.js', ['--slides-dir', blobPosterSlidesDir, '--output', path.join(workspace, 'blocked-blob-poster.pdf')]);
+    assert.equal(blockedBlobPoster.code, 1);
+    assert.match(blockedBlobPoster.stderr, /unsupported-image-url-scheme/);
   } finally {
     await rm(workspace, { recursive: true, force: true }).catch(() => {});
   }

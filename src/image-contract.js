@@ -13,6 +13,7 @@ const ASSET_CONTRACT_RULES = {
     remoteInsecureCode: 'remote-image-url-insecure',
     absoluteCode: 'absolute-filesystem-image-path',
     rootRelativeCode: 'root-relative-image-path',
+    otherSchemeCode: 'unsupported-image-url-scheme',
     noncanonicalCode: 'noncanonical-relative-image-path',
   },
   video: {
