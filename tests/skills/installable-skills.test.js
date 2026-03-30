@@ -112,6 +112,14 @@ test('slides-grab design skill points at the bundled art-direction reference', (
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
 });
 
+test('slides-grab design rules keep packaged image and video asset commands', () => {
+  const text = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
+
+  assert.match(text, /slides-grab image/i);
+  assert.match(text, /slides-grab fetch-video/i);
+  assert.match(text, /local videos and their poster thumbnails/i);
+});
+
 test('slides-grab workflow reference keeps packaged stage commands and image fallback guidance', () => {
   const text = readFileSync('skills/slides-grab/references/presentation-workflow-reference.md', 'utf-8');
 
@@ -126,4 +134,22 @@ test('slides-grab workflow reference keeps packaged stage commands and image fal
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
   assert.match(text, /Nano Banana API fails|Nano Banana is down/i);
   assert.match(text, /web search/i);
+});
+
+test('slides-grab orchestration skill keeps image and video workflows without duplicate rules', () => {
+  const text = readFileSync('skills/slides-grab/SKILL.md', 'utf-8');
+
+  assert.match(text, /slides-grab image/i);
+  assert.match(text, /Nano Banana Pro/i);
+  assert.match(text, /fetch-video|yt-dlp/i);
+  assert.match(text, /local videos/i);
+  assert.equal((text.match(/When a slide needs bespoke imagery/gi) || []).length, 1);
+  assert.equal((text.match(/For complex diagrams/gi) || []).length, 1);
+});
+
+test('slides-grab design rules advertise both packaged image and video asset commands', () => {
+  const text = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
+
+  assert.match(text, /slides-grab image --prompt/i);
+  assert.match(text, /slides-grab fetch-video/i);
 });
