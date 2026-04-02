@@ -31,10 +31,11 @@ Generate high-quality `slide-XX.html` files in the selected slides workspace (`s
 7. If the source video starts on YouTube or another supported page, use `slides-grab fetch-video --url <youtube-url> --slides-dir <path>` (or `yt-dlp` directly if needed) to download it into `<slides-dir>/assets/` before saving the slide HTML.
 8. Run `slides-grab validate --slides-dir <path>` after generation or edits.
 9. If validation fails, automatically fix the source slide HTML/CSS and re-run validation until it passes.
-10. Run `slides-grab build-viewer --slides-dir <path>` only after validation passes.
-11. Run the slide litmus check from `references/beautiful-slide-defaults.md` before presenting the deck for review.
-12. Iterate on user feedback by editing only requested slide files, then re-run validation and rebuild the viewer.
-13. Keep revising until user approves conversion stage.
+10. Run the slide litmus check from `references/beautiful-slide-defaults.md` before presenting the deck for review.
+11. Launch the interactive editor for visual review: `slides-grab edit --slides-dir <path>`
+12. Iterate on user feedback by editing only requested slide files, then re-run validation after each edit round.
+13. When the user confirms editing is complete, suggest: build the viewer (`slides-grab build-viewer --slides-dir <path>`) for a final read-only preview, or proceed to export (PDF/PPTX).
+14. Keep revising until user approves conversion stage.
 
 ## Rules
 - Keep slide size 720pt x 405pt.
