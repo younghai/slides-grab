@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +74,53 @@ test('slides-grab help exposes style discovery commands', () => {
   assert.match(output, /list-styles/);
   assert.match(output, /preview-styles/);
   assert.match(output, /select-style/);
+});
+
+test('style discovery commands support --slides-dir workspaces', () => {
+  const workspace = makeWorkspace();
+  const slidesDir = path.join('decks', 'demo');
+  const configPath = path.join(workspace, slidesDir, STYLE_CONFIG_FILE);
+  const previewPath = path.join(workspace, slidesDir, 'style-preview.html');
+
+  try {
+    const selectOutput = execFileSync(
+      process.execPath,
+      [cliPath, 'select-style', 'glassmorphism', '--slides-dir', slidesDir],
+      {
+        cwd: workspace,
+        encoding: 'utf-8',
+      },
+    );
+
+    assert.match(selectOutput, /Saved selection to .*decks[\/]demo[\/]style-config\.json/);
+    assert.ok(existsSync(configPath));
+
+    const listOutput = execFileSync(
+      process.execPath,
+      [cliPath, 'list-styles', '--slides-dir', slidesDir],
+      {
+        cwd: workspace,
+        encoding: 'utf-8',
+      },
+    );
+
+    assert.match(listOutput, /glassmorphism/);
+    assert.match(listOutput, /selected/i);
+
+    const previewOutput = execFileSync(
+      process.execPath,
+      [cliPath, 'preview-styles', '--slides-dir', slidesDir],
+      {
+        cwd: workspace,
+        encoding: 'utf-8',
+      },
+    );
+
+    assert.match(previewOutput, /Wrote style preview catalog/i);
+    assert.ok(existsSync(previewPath));
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
 });
 
 test('slides-grab preview-styles writes a local html gallery', () => {
@@ -164,6 +211,32 @@ test('slides-grab select-style writes the local style config and list-styles mar
 
     assert.match(listOutput, /neo-brutalism/);
     assert.match(listOutput, /selected/i);
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test('stale style-config entries do not block list or preview recovery', () => {
+  const workspace = makeWorkspace();
+  const outputPath = path.join(workspace, 'style-catalog.html');
+  const configPath = path.join(workspace, STYLE_CONFIG_FILE);
+
+  try {
+    writeFileSync(configPath, `${JSON.stringify({ selectedStyleId: 'unknown-style' }, null, 2)}\n`, 'utf-8');
+
+    const listOutput = execFileSync(process.execPath, [cliPath, 'list-styles'], {
+      cwd: workspace,
+      encoding: 'utf-8',
+    });
+    const previewOutput = execFileSync(process.execPath, [cliPath, 'preview-styles', '--output', outputPath], {
+      cwd: workspace,
+      encoding: 'utf-8',
+    });
+
+    assert.match(listOutput, /Available design styles:/);
+    assert.match(listOutput, /unknown-style/);
+    assert.match(previewOutput, /Ignoring saved style selection/i);
+    assert.match(readFileSync(outputPath, 'utf-8'), /Previewing 30 bundled design styles/i);
   } finally {
     rmSync(workspace, { recursive: true, force: true });
   }

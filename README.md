@@ -70,7 +70,7 @@ There are many AI tools that generate slide HTML. Almost none let you **visually
 
 ## CLI Commands
 
-All commands support `--slides-dir <path>` (default: `slides`).
+Workflow commands support `--slides-dir <path>` (default: `slides`). The style discovery commands also accept `--slides-dir <path>` when you want to read/write `style-config.json` inside a specific deck workspace; otherwise they use the current working directory.
 
 On a fresh clone, the discovery commands (`--help`, `list-templates`, `list-themes`, `list-styles`, `preview-styles`, and `select-style`) work without a deck. `edit`, `build-viewer`, `validate`, `convert`, and `pdf` require an existing slides workspace containing `slide-*.html`.
 
@@ -107,7 +107,7 @@ slides-grab select-style glassmorphism
 ```
 
 - Run `slides-grab preview-styles` without `--style` to generate a full local gallery.
-- `slides-grab select-style <id>` writes `style-config.json` in your current workspace so agents can reuse the approved direction before generating slides.
+- `slides-grab select-style <id>` writes `style-config.json` in your current workspace, or inside the `--slides-dir` workspace when you target a specific deck, so agents can reuse the approved direction before generating slides.
 - You can change the selected style anytime before creating or regenerating slides.
 
 This keeps preview/approval in scope without adding a separate GUI: the agent can suggest a few styles, the user previews only when needed, and the approved style is persisted before design work starts.

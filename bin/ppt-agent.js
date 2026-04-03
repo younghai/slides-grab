@@ -73,6 +73,24 @@ function reportCliError(error) {
   process.exitCode = 1;
 }
 
+function resolveWorkspaceDir(slidesDir) {
+  if (!slidesDir) {
+    return process.cwd();
+  }
+  return resolve(process.cwd(), String(slidesDir));
+}
+
+function buildSlidesDirSuffix(slidesDir) {
+  return slidesDir ? ` --slides-dir ${slidesDir}` : '';
+}
+
+function formatInvalidStyleSelectionMessage(config) {
+  if (!config?.invalidSelectedStyleId) {
+    return null;
+  }
+  return `Ignoring saved style selection "${config.invalidSelectedStyleId}" from ${config.path}.`;
+}
+
 const program = new Command();
 
 program
@@ -270,14 +288,16 @@ program
 program
   .command('list-styles')
   .description('List bundled design collections users can preview/select before slide generation')
-  .action(async () => {
+  .option('--slides-dir <path>', 'Optional slides workspace used for style-config.json')
+  .action(async (options = {}) => {
     try {
       const [{ listDesignStyles }, { readSelectedStyleConfig }] = await Promise.all([
         import('../src/design-styles.js'),
         import('../src/style-config.js'),
       ]);
+      const workspaceDir = resolveWorkspaceDir(options.slidesDir);
       const styles = listDesignStyles();
-      const selectedConfig = await readSelectedStyleConfig(process.cwd());
+      const selectedConfig = await readSelectedStyleConfig(workspaceDir, { allowInvalidSelection: true });
       const selectedStyleId = selectedConfig?.style?.id ?? null;
 
       if (styles.length === 0) {
@@ -295,8 +315,14 @@ program
       console.log(`\nTotal: ${styles.length} styles`);
       if (selectedConfig?.style) {
         console.log(`Selected style: ${selectedConfig.style.title} (${selectedConfig.style.id})`);
+      } else if (selectedConfig?.invalidSelectedStyleId) {
+        console.log(`Selected style: none (saved value "${selectedConfig.invalidSelectedStyleId}" is no longer bundled)`);
       } else {
         console.log('Selected style: none');
+      }
+      const invalidSelectionMessage = formatInvalidStyleSelectionMessage(selectedConfig);
+      if (invalidSelectionMessage) {
+        console.log(`${invalidSelectionMessage} Run "slides-grab select-style <id>${buildSlidesDirSuffix(options.slidesDir)}" to update it.`);
       }
     } catch (error) {
       reportCliError(error);
@@ -306,18 +332,20 @@ program
 program
   .command('preview-styles')
   .description('Generate a local HTML preview for the full design catalog or one selected style')
+  .option('--slides-dir <path>', 'Optional slides workspace used for style-config.json and default preview output')
   .option('--style <id>', 'Focus the preview on a single style id')
   .option('--output <path>', 'Output HTML path', 'style-preview.html')
   .action(async (options = {}) => {
     try {
       const { buildStylePreviewHtml, requireDesignStyle } = await import('../src/design-styles.js');
       const { readSelectedStyleConfig } = await import('../src/style-config.js');
-      const outputPath = resolve(process.cwd(), options.output);
-      const currentSelection = await readSelectedStyleConfig(process.cwd());
+      const workspaceDir = resolveWorkspaceDir(options.slidesDir);
+      const outputPath = resolve(workspaceDir, options.output);
+      const currentSelection = await readSelectedStyleConfig(workspaceDir, { allowInvalidSelection: true });
       const selectedStyle = options.style ? requireDesignStyle(String(options.style)) : null;
       const html = buildStylePreviewHtml({
         styleId: selectedStyle?.id,
-        selectedStyleId: selectedStyle?.id ?? currentSelection?.selectedStyleId ?? null,
+        selectedStyleId: selectedStyle?.id ?? currentSelection?.style?.id ?? null,
       });
 
       mkdirSync(dirname(outputPath), { recursive: true });
@@ -328,6 +356,10 @@ program
       } else {
         console.log(`Wrote style preview catalog to ${outputPath}`);
       }
+      const invalidSelectionMessage = !selectedStyle ? formatInvalidStyleSelectionMessage(currentSelection) : null;
+      if (invalidSelectionMessage) {
+        console.log(invalidSelectionMessage);
+      }
     } catch (error) {
       reportCliError(error);
     }
@@ -337,20 +369,22 @@ program
   .command('select-style')
   .description('Persist a selected bundled design style before slide generation')
   .argument('<id>', 'Design style id (e.g. "glassmorphism")')
-  .action(async (styleId) => {
+  .option('--slides-dir <path>', 'Optional slides workspace used for style-config.json')
+  .action(async (styleId, options = {}) => {
     try {
       const { requireDesignStyle } = await import('../src/design-styles.js');
       const {
         getStyleConfigPath,
         writeSelectedStyleConfig,
       } = await import('../src/style-config.js');
+      const workspaceDir = resolveWorkspaceDir(options.slidesDir);
       const style = requireDesignStyle(String(styleId));
 
-      await writeSelectedStyleConfig({ cwd: process.cwd(), style });
+      await writeSelectedStyleConfig({ cwd: workspaceDir, style });
 
       console.log(`Selected style: ${style.title} (${style.id})`);
-      console.log(`Saved selection to ${getStyleConfigPath(process.cwd())}`);
-      console.log(`Preview anytime with: slides-grab preview-styles --style ${style.id}`);
+      console.log(`Saved selection to ${getStyleConfigPath(workspaceDir)}`);
+      console.log(`Preview anytime with: slides-grab preview-styles --style ${style.id}${buildSlidesDirSuffix(options.slidesDir)}`);
     } catch (error) {
       reportCliError(error);
     }

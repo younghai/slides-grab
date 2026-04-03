@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
-import { DESIGN_STYLES_SOURCE, requireDesignStyle } from './design-styles.js';
+import { DESIGN_STYLES_SOURCE, getDesignStyle, requireDesignStyle } from './design-styles.js';
 
 export const STYLE_CONFIG_FILE = 'style-config.json';
 
@@ -9,18 +9,25 @@ export function getStyleConfigPath(cwd = process.cwd()) {
   return resolve(cwd, STYLE_CONFIG_FILE);
 }
 
-export async function readSelectedStyleConfig(cwd = process.cwd()) {
+export async function readSelectedStyleConfig(cwd = process.cwd(), options = {}) {
   try {
+    const { allowInvalidSelection = false } = options;
     const configPath = getStyleConfigPath(cwd);
     const rawText = await readFile(configPath, 'utf-8');
     const parsed = JSON.parse(rawText);
     const selectedStyleId = parsed.selectedStyleId ?? parsed.style?.id ?? null;
+    const style = selectedStyleId ? getDesignStyle(selectedStyleId) : null;
+
+    if (selectedStyleId && !style && !allowInvalidSelection) {
+      requireDesignStyle(selectedStyleId);
+    }
 
     return {
       ...parsed,
       path: configPath,
       selectedStyleId,
-      style: selectedStyleId ? requireDesignStyle(selectedStyleId) : null,
+      style,
+      invalidSelectedStyleId: selectedStyleId && !style ? selectedStyleId : null,
     };
   } catch (error) {
     if (error && error.code === 'ENOENT') {

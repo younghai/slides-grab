@@ -29,7 +29,7 @@ Use the installed **slides-grab-plan** skill.
 Use the installed **slides-grab-design** skill.
 
 1. Read approved `slide-outline.md`.
-2. If the design direction is still open, shortlist bundled design collections with `slides-grab list-styles`, preview one or the full catalog with `slides-grab preview-styles`, and persist the approved direction with `slides-grab select-style <id>` before generating slides.
+2. If the design direction is still open, shortlist bundled design collections with `slides-grab list-styles`, preview one or the full catalog with `slides-grab preview-styles`, and persist the approved direction with `slides-grab select-style <id>` before generating slides. For multi-deck projects, append `--slides-dir <path>` so the deck-local `style-config.json` stays with that workspace.
 3. Generate `slide-*.html` files in the slides workspace (default: `slides/`).
 4. Run validation: `slides-grab validate --slides-dir <path>`
 5. If validation fails, automatically fix the slide HTML/CSS until validation passes.
