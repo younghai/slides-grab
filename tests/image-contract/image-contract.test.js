@@ -278,7 +278,7 @@ test('validate reports missing local assets and discouraged path forms', async (
 
 test('validate passes for canonical local video assets under ./assets', async (t) => {
   if (!canEncodeVideoFixtures()) {
-    t.skip('ffmpeg is required for video fixture generation');
+    return t.skip('ffmpeg is required for video fixture generation');
   }
 
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'slides-grab-video-contract-pass-'));
@@ -298,7 +298,7 @@ test('validate passes for canonical local video assets under ./assets', async (t
 
 test('validate and html2pdf block unsupported video asset paths', async (t) => {
   if (!canEncodeVideoFixtures()) {
-    t.skip('ffmpeg is required for video fixture generation');
+    return t.skip('ffmpeg is required for video fixture generation');
   }
 
   const workspace = await mkdtemp(path.join(os.tmpdir(), 'slides-grab-video-contract-fail-'));

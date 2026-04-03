@@ -438,7 +438,7 @@ test('capture mode is the default and produces image-backed pages', { concurrenc
 
 test('print mode keeps searchable browser text flow and normalizes the bleed regression slide size', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canExtractPdfText()) {
-    t.skip('pdftotext is required for searchable-text verification');
+    return t.skip('pdftotext is required for searchable-text verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-print-'));
@@ -472,7 +472,7 @@ test('print mode keeps searchable browser text flow and normalizes the bleed reg
 
 test('print mode clips off-canvas bleed fixtures instead of leaving a right gutter', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canRasterizePdfPages()) {
-    t.skip('pdftoppm is required for rendered-image verification');
+    return t.skip('pdftoppm is required for rendered-image verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-raster-'));
@@ -494,7 +494,7 @@ test('print mode clips off-canvas bleed fixtures instead of leaving a right gutt
 
 test('print mode preserves body padding used as slide margin', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canRasterizePdfPages()) {
-    t.skip('pdftoppm is required for rendered-image verification');
+    return t.skip('pdftoppm is required for rendered-image verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-body-padding-print-'));
@@ -576,7 +576,7 @@ test('offset-frame fixture keeps capture crops aligned to the detected frame ori
 
 test('offset-frame fixture keeps print exports cropped to the detected frame origin', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canExtractPdfText() || !canRasterizePdfPages()) {
-    t.skip('pdftotext and pdftoppm are required for searchable-text and raster verification');
+    return t.skip('pdftotext and pdftoppm are required for searchable-text and raster verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-offset-print-'));
@@ -636,7 +636,7 @@ test('capture mode preserves JS-painted direct-child canvas frames', { concurren
 
 test('print mode preserves JS-painted direct-child canvas frames', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canRasterizePdfPages()) {
-    t.skip('pdftoppm is required for rendered-image verification');
+    return t.skip('pdftoppm is required for rendered-image verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-runtime-print-'));
@@ -667,7 +667,7 @@ test('print mode preserves JS-painted direct-child canvas frames', { concurrency
 
 test('capture mode uses a video poster thumbnail instead of the live autoplay frame', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canEncodeVideoFixtures()) {
-    t.skip('ffmpeg is required for video fixture generation');
+    return t.skip('ffmpeg is required for video fixture generation');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-video-capture-'));
@@ -693,7 +693,7 @@ test('capture mode uses a video poster thumbnail instead of the live autoplay fr
 
 test('print mode uses a video poster thumbnail instead of the live autoplay frame', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canEncodeVideoFixtures() || !canRasterizePdfPages()) {
-    t.skip('ffmpeg and pdftoppm are required for rendered video-poster verification');
+    return t.skip('ffmpeg and pdftoppm are required for rendered video-poster verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-video-print-'));
@@ -715,7 +715,7 @@ test('print mode uses a video poster thumbnail instead of the live autoplay fram
 
 test('capture mode keeps video poster thumbnails clipped by ancestor overflow', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canEncodeVideoFixtures()) {
-    t.skip('ffmpeg is required for video fixture generation');
+    return t.skip('ffmpeg is required for video fixture generation');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-video-clip-capture-'));
@@ -746,7 +746,7 @@ test('capture mode keeps video poster thumbnails clipped by ancestor overflow', 
 
 test('print mode keeps video poster thumbnails clipped by ancestor overflow', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canEncodeVideoFixtures() || !canRasterizePdfPages()) {
-    t.skip('ffmpeg and pdftoppm are required for rendered video clipping verification');
+    return t.skip('ffmpeg and pdftoppm are required for rendered video clipping verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-video-clip-print-'));
@@ -799,7 +799,7 @@ test('capture mode preserves runtime-painted direct-child frame roots during iso
 
 test('print mode preserves runtime-painted direct-child frame roots during isolation', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canRasterizePdfPages()) {
-    t.skip('pdftoppm is required for rendered-image verification');
+    return t.skip('pdftoppm is required for rendered-image verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-runtime-frame-print-'));
@@ -853,7 +853,7 @@ test('capture mode preserves original overlap order for same-frame body siblings
 
 test('print mode preserves original overlap order for same-frame body siblings', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canRasterizePdfPages()) {
-    t.skip('pdftoppm is required for rendered-image verification');
+    return t.skip('pdftoppm is required for rendered-image verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-overlap-print-'));
@@ -900,7 +900,7 @@ test('capture mode keeps same-frame top-level siblings inside the selected slide
 
 test('print mode keeps same-frame top-level siblings inside the selected slide frame', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canExtractPdfText() || !canRasterizePdfPages()) {
-    t.skip('pdftotext and pdftoppm are required for sibling verification');
+    return t.skip('pdftotext and pdftoppm are required for sibling verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-sibling-print-'));
@@ -949,7 +949,7 @@ test('capture mode preserves transformed slide roots during normalization', { co
 
 test('print mode preserves transformed slide roots during normalization', { concurrency: false, timeout: 120000 }, async (t) => {
   if (!canRasterizePdfPages()) {
-    t.skip('pdftoppm is required for transform verification');
+    return t.skip('pdftoppm is required for transform verification');
   }
 
   const workspace = await mkdtemp(join(os.tmpdir(), 'html2pdf-e2e-transform-print-'));
