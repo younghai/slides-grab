@@ -136,13 +136,14 @@ test('slides-grab workflow reference keeps packaged stage commands and image fal
   assert.match(text, /web search/i);
 });
 
-test('slides-grab orchestration skill keeps image and video workflows without duplicate rules', () => {
+test('slides-grab orchestration skill keeps packaged style/image/video workflows without duplicate rules', () => {
   const text = readFileSync('skills/slides-grab/SKILL.md', 'utf-8');
 
   assert.match(text, /slides-grab image/i);
   assert.match(text, /Nano Banana Pro/i);
   assert.match(text, /fetch-video|yt-dlp/i);
-  assert.match(text, /list-styles/);
+  assert.match(text, /slides-grab list-styles/);
+  assert.match(text, /slides-grab preview-styles/);
   assert.match(text, /local videos/i);
   assert.equal((text.match(/When a slide needs bespoke imagery/gi) || []).length, 1);
   assert.equal((text.match(/For complex diagrams/gi) || []).length, 1);
