@@ -283,7 +283,7 @@ program
     try {
       const { getPreviewHtmlPath } = await import('../src/design-styles.js');
       const previewPath = getPreviewHtmlPath();
-      console.log(previewPath);
+      console.log(`Opening style preview: ${previewPath}`);
     } catch (error) {
       reportCliError(error);
     }
