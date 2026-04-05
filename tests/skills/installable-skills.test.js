@@ -98,15 +98,15 @@ test('slides-grab help no longer exposes the legacy custom skill installer', () 
 
   assert.doesNotMatch(output, /\binstall-codex-skills\b/);
 });
-test('slides-grab design skill points at the bundled art-direction reference', () => {
+test('slides-grab design skill keeps the packaged style-discovery CLI guidance', () => {
   const text = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
 
   assert.match(text, /references\/beautiful-slide-defaults\.md/);
   assert.match(text, /visual thesis/i);
   assert.match(text, /content plan/i);
   assert.match(text, /slide litmus check/i);
-  assert.match(text, /list-styles/);
-  assert.match(text, /preview-styles/);
+  assert.match(text, /slides-grab list-styles/);
+  assert.match(text, /slides-grab preview-styles/);
   assert.match(text, /slides-grab image/i);
   assert.match(text, /Nano Banana Pro/i);
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
