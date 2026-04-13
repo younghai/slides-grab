@@ -1,4 +1,5 @@
 import { access, readdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
@@ -9,12 +10,14 @@ import {
   resolveSlideSourcePath,
 } from '../image-contract.js';
 
-export const FRAME_PT = { width: 720, height: 405 };
-export const PT_TO_PX = 96 / 72;
-export const FRAME_PX = {
-  width: FRAME_PT.width * PT_TO_PX,
-  height: FRAME_PT.height * PT_TO_PX,
-};
+const require = createRequire(import.meta.url);
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeConfig,
+} = require('../slide-mode.cjs');
+
+export const FRAME_PT = getSlideModeConfig(DEFAULT_SLIDE_MODE).framePt;
+export const FRAME_PX = getSlideModeConfig(DEFAULT_SLIDE_MODE).framePx;
 export const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
 export const TEXT_SELECTOR = 'p,h1,h2,h3,h4,h5,h6,li';
 export const TOLERANCE_PX = 0.5;
@@ -58,28 +61,30 @@ export function summarizeSlides(slides) {
   return summary;
 }
 
-export function createValidationResult(slides) {
+export function createValidationResult(slides, slideMode = DEFAULT_SLIDE_MODE) {
+  const { framePt, framePx } = getSlideModeConfig(slideMode);
   return {
     generatedAt: new Date().toISOString(),
     frame: {
-      widthPt: FRAME_PT.width,
-      heightPt: FRAME_PT.height,
-      widthPx: FRAME_PX.width,
-      heightPx: FRAME_PX.height,
+      widthPt: framePt.width,
+      heightPt: framePt.height,
+      widthPx: framePx.width,
+      heightPx: framePx.height,
     },
     slides,
     summary: summarizeSlides(slides),
   };
 }
 
-export function createValidationFailure(error) {
+export function createValidationFailure(error, slideMode = DEFAULT_SLIDE_MODE) {
+  const { framePt, framePx } = getSlideModeConfig(slideMode);
   return {
     generatedAt: new Date().toISOString(),
     frame: {
-      widthPt: FRAME_PT.width,
-      heightPt: FRAME_PT.height,
-      widthPx: FRAME_PX.width,
-      heightPx: FRAME_PX.height,
+      widthPt: framePt.width,
+      heightPt: framePt.height,
+      widthPx: framePx.width,
+      heightPx: framePx.height,
     },
     slides: [],
     summary: {
@@ -347,9 +352,10 @@ export function selectSlideFiles(slideFiles, selectedSlides = [], slidesDir = ''
   return slideFiles.filter((slide) => available.has(slide) && requested.includes(slide));
 }
 
-export async function inspectSlide(page, fileName, slidesDir) {
+export async function inspectSlide(page, fileName, slidesDir, slideMode = DEFAULT_SLIDE_MODE) {
   const slidePath = join(slidesDir, fileName);
   const slideUrl = pathToFileURL(slidePath).href;
+  const { framePx, sizeLabel } = getSlideModeConfig(slideMode);
 
   await page.goto(slideUrl, { waitUntil: 'load' });
   await page.evaluate(async () => {
@@ -359,7 +365,7 @@ export async function inspectSlide(page, fileName, slidesDir) {
   });
 
   const inspection = await page.evaluate(
-    ({ framePx, textSelector, tolerancePx }) => {
+    ({ framePx, sizeLabel, textSelector, tolerancePx }) => {
       const skipTags = new Set(['SCRIPT', 'STYLE', 'META', 'LINK', 'HEAD', 'TITLE', 'NOSCRIPT']);
       const critical = [];
       const warning = [];
@@ -552,7 +558,7 @@ export async function inspectSlide(page, fileName, slidesDir) {
         if (outsideFrame) {
           critical.push({
             code: 'overflow-outside-frame',
-            message: 'Element exceeds the 720pt x 405pt slide frame.',
+            message: `Element exceeds the ${sizeLabel} slide frame.`,
             element: elementPath(element),
             bbox: normalizeRect(rect),
             frame: normalizeRect(frameRect),
@@ -663,7 +669,8 @@ export async function inspectSlide(page, fileName, slidesDir) {
       };
     },
     {
-      framePx: FRAME_PX,
+      framePx,
+      sizeLabel,
       textSelector: TEXT_SELECTOR,
       tolerancePx: TOLERANCE_PX,
     },
@@ -696,12 +703,12 @@ export async function inspectSlide(page, fileName, slidesDir) {
   };
 }
 
-export async function scanSlides(page, slidesDir, slideFiles) {
+export async function scanSlides(page, slidesDir, slideFiles, slideMode = DEFAULT_SLIDE_MODE) {
   const slides = [];
 
   for (const slideFile of slideFiles) {
     try {
-      const result = await inspectSlide(page, slideFile, slidesDir);
+      const result = await inspectSlide(page, slideFile, slidesDir, slideMode);
       slides.push(result);
     } catch (error) {
       slides.push({
@@ -740,7 +747,10 @@ export function formatValidationFailureForExport(result, exportLabel = 'Export')
   }
 
   const suffix = findings.length > 0 ? `\n${findings.join('\n')}` : '';
-  return `${exportLabel} blocked by slide validation. Run \`slides-grab validate --slides-dir <path>\` for full diagnostics.${suffix}`;
+  const modeHint = result.slideMode && result.slideMode !== DEFAULT_SLIDE_MODE
+    ? ` --mode ${result.slideMode}`
+    : '';
+  return `${exportLabel} blocked by slide validation. Run \`slides-grab validate --slides-dir <path>${modeHint}\` for full diagnostics.${suffix}`;
 }
 
 const EXPORT_BLOCKING_IMAGE_CONTRACT_CODES = new Set([
@@ -799,6 +809,7 @@ export async function ensureSlidesPassValidation(
   slidesDir,
   {
     exportLabel = 'Export',
+    slideMode = DEFAULT_SLIDE_MODE,
     shouldBlockIssue = isBlockingImageContractIssue,
   } = {},
 ) {
@@ -812,8 +823,11 @@ export async function ensureSlidesPassValidation(
   const page = await context.newPage();
 
   try {
-    const slides = await scanSlides(page, slidesDir, slideFiles);
-    const result = createValidationResult(slides);
+    const slides = await scanSlides(page, slidesDir, slideFiles, slideMode);
+    const result = {
+      ...createValidationResult(slides, slideMode),
+      slideMode,
+    };
     const blockingResult = filterExportBlockingSlides(result, shouldBlockIssue);
     if (blockingResult.summary.failedSlides > 0) {
       throw new Error(formatValidationFailureForExport(blockingResult, exportLabel));

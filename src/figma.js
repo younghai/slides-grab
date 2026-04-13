@@ -1,5 +1,12 @@
+import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import { basename, dirname, extname, join, resolve } from 'node:path';
+
+const require = createRequire(import.meta.url);
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeConfig,
+} = require('./slide-mode.cjs');
 
 export const DEFAULT_FIGMA_SUFFIX = '-figma.pptx';
 export const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
@@ -36,11 +43,12 @@ export function getFigmaManualImportInstructions() {
   return 'Figma Slides -> Import -> select the generated .pptx file.';
 }
 
-export function configureFigmaExportPresentation(pres) {
+export function configureFigmaExportPresentation(pres, slideMode = DEFAULT_SLIDE_MODE) {
+  const { figmaSizeIn } = getSlideModeConfig(slideMode);
   pres.defineLayout({
     name: FIGMA_EXPORT_LAYOUT_NAME,
-    width: SLIDE_WIDTH_INCHES,
-    height: SLIDE_HEIGHT_INCHES,
+    width: figmaSizeIn.width,
+    height: figmaSizeIn.height,
   });
   pres.layout = FIGMA_EXPORT_LAYOUT_NAME;
   return pres;

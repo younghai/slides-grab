@@ -87,8 +87,9 @@ program
   .command('build-viewer')
   .description('Build viewer.html from slide HTML files')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .action(async (options = {}) => {
-    const args = ['--slides-dir', options.slidesDir];
+    const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     await runCommand('scripts/build-viewer.js', args);
   });
 
@@ -98,9 +99,10 @@ program
   .description('Run structured validation on slide HTML files (Playwright-based)')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--format <format>', 'Output format: concise, json, json-full', 'concise')
+  .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .option('--slide <file>', 'Validate only the named slide file (repeatable)', collectRepeatedOption, [])
   .action(async (options = {}) => {
-    const args = ['--slides-dir', options.slidesDir, '--format', options.format];
+    const args = ['--slides-dir', options.slidesDir, '--format', options.format, '--mode', options.mode];
     for (const slide of options.slide || []) {
       args.push('--slide', String(slide));
     }
@@ -112,9 +114,10 @@ program
   .description('Convert slide HTML files to experimental / unstable PPTX')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file')
+  .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .option('--resolution <preset>', 'Raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p)')
   .action(async (options = {}) => {
-    const args = ['--slides-dir', options.slidesDir];
+    const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     if (options.output) {
       args.push('--output', String(options.output));
     }
@@ -130,6 +133,7 @@ program
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PDF file')
   .option('--mode <mode>', 'PDF export mode: capture for visual fidelity, print for searchable text', 'capture')
+  .option('--slide-mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .option('--resolution <preset>', 'Capture raster size preset: 720p, 1080p, 1440p, 2160p, or 4k (default: 2160p in capture mode)')
   .action(async (options = {}) => {
     const args = ['--slides-dir', options.slidesDir];
@@ -138,6 +142,9 @@ program
     }
     if (options.mode) {
       args.push('--mode', String(options.mode));
+    }
+    if (options.slideMode) {
+      args.push('--slide-mode', String(options.slideMode));
     }
     if (options.resolution) {
       args.push('--resolution', String(options.resolution));
@@ -165,9 +172,10 @@ program
   .helpOption('-h, --help', 'Show this help message')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
   .option('--output <path>', 'Output PPTX file (default: <slides-dir>-figma.pptx)')
+  .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .addHelpText('after', figmaHelpText)
   .action(async (options = {}) => {
-    const args = ['--slides-dir', options.slidesDir];
+    const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     if (options.output) {
       args.push('--output', String(options.output));
     }
@@ -222,8 +230,9 @@ program
   .description('Start interactive slide editor with Codex image-based edit flow')
   .option('--port <number>', 'Server port')
   .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
   .action(async (options = {}) => {
-    const args = ['--slides-dir', options.slidesDir];
+    const args = ['--slides-dir', options.slidesDir, '--mode', options.mode];
     if (options.port) {
       args.push('--port', String(options.port));
     }

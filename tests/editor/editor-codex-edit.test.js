@@ -80,7 +80,7 @@ test('buildCodexEditPrompt includes user prompt, bbox, and XPath targets', () =>
   assert.match(prompt, /Region 1/);
   assert.match(prompt, /Slide edit rules \(follow strictly\):/);
   assert.match(prompt, /primary objective/i);
-  assert.match(prompt, /Keep slide size 720pt x 405pt\./);
+  assert.match(prompt, /Keep slide size appropriate for the current mode/);
   assert.match(prompt, /slides-grab image/i);
   assert.match(prompt, /GOOGLE_API_KEY|GEMINI_API_KEY/);
   assert.match(prompt, /Edit only the requested slide HTML file among slide-\*\.html files\./);
@@ -183,4 +183,17 @@ test('buildEditTimeoutMessage describes terminated editor runs', () => {
     buildEditTimeoutMessage({ engineLabel: 'Codex', timeoutMs: 200 }),
     'Codex edit timed out after 200ms and was terminated.',
   );
+});
+
+
+test('buildCodexEditPrompt switches sizing guidance for card-news mode', () => {
+  const prompt = buildCodexEditPrompt({
+    slideFile: 'slide-03.html',
+    userPrompt: 'Tighten this card-news cover.',
+    slideMode: 'card-news',
+    selections: [{ bbox: { x: 40, y: 48, width: 320, height: 320 }, targets: [] }],
+  });
+
+  assert.match(prompt, /Selected regions on slide \(960x960 coordinate space\):/);
+  assert.match(prompt, /Keep slide dimensions at 720pt x 720pt\./);
 });

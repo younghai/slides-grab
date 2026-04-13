@@ -25,6 +25,7 @@ test('parseCliArgs applies defaults for output, slides dir, mode, and help', () 
     output: 'slides.pdf',
     slidesDir: 'slides',
     mode: 'capture',
+    slideMode: 'presentation',
     resolution: '2160p',
     help: false,
   });
@@ -37,6 +38,7 @@ test('parseCliArgs reads output, slides dir, mode, and resolution options', () =
   assert.equal(parseCliArgs(['--slides-dir=slides-q1']).slidesDir, 'slides-q1');
   assert.equal(parseCliArgs(['--mode', 'print']).mode, 'print');
   assert.equal(parseCliArgs(['--mode=CAPTURE']).mode, 'capture');
+  assert.equal(parseCliArgs(['--slide-mode', 'card-news']).slideMode, 'card-news');
   assert.equal(parseCliArgs(['--resolution', '2160p']).resolution, '2160p');
   assert.equal(parseCliArgs(['--resolution=4k']).resolution, '2160p');
 });
@@ -51,8 +53,10 @@ test('parseCliArgs rejects missing and invalid option values', () => {
   assert.throws(() => parseCliArgs(['--output']), /missing value/i);
   assert.throws(() => parseCliArgs(['--slides-dir']), /missing value/i);
   assert.throws(() => parseCliArgs(['--mode']), /missing value/i);
+  assert.throws(() => parseCliArgs(['--slide-mode']), /missing value/i);
   assert.throws(() => parseCliArgs(['--resolution']), /missing value/i);
   assert.throws(() => parseCliArgs(['--mode', 'vector']), /unknown pdf mode/i);
+  assert.throws(() => parseCliArgs(['--slide-mode', 'story']), /unknown --slide-mode value/i);
   assert.throws(() => parseCliArgs(['--resolution', 'retina']), /unknown resolution/i);
 });
 
@@ -112,6 +116,13 @@ test('buildPageOptions honors requested capture resolution presets', () => {
   assert.deepEqual(buildPageOptions('print', '2160p'), {
     viewport: { width: 960, height: 540 },
     deviceScaleFactor: 1,
+  });
+});
+
+test('buildPageOptions switches to square viewport for card-news capture mode', () => {
+  assert.deepEqual(buildPageOptions('capture', '1440p', 'card-news'), {
+    viewport: { width: 960, height: 960 },
+    deviceScaleFactor: 1440 / 960,
   });
 });
 

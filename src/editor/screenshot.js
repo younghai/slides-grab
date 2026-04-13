@@ -17,8 +17,8 @@ export async function createScreenshotBrowser() {
  * Create a fresh screenshot page/context from an existing browser.
  * Caller must close the returned context.
  */
-export async function createScreenshotPage(browser) {
-  const context = await browser.newContext({ viewport: SCREENSHOT_SIZE });
+export async function createScreenshotPage(browser, screenshotSize = SCREENSHOT_SIZE) {
+  const context = await browser.newContext({ viewport: screenshotSize });
   const page = await context.newPage();
   return { context, page };
 }
@@ -34,6 +34,7 @@ export async function createScreenshotPage(browser) {
  * @param {boolean} [options.useHttp]       – if true, slidesDir is treated as a base URL
  */
 export async function captureSlideScreenshot(page, slideFile, screenshotPath, slidesDir, options = {}) {
+  const screenshotSize = options.screenshotSize || SCREENSHOT_SIZE;
   const slideUrl = options.useHttp
     ? `${slidesDir}/${slideFile}`
     : pathToFileURL(join(slidesDir, slideFile)).href;
@@ -64,7 +65,7 @@ export async function captureSlideScreenshot(page, slideFile, screenshotPath, sl
     const scale = Math.min(width / sourceWidth, height / sourceHeight);
 
     bodyStyle.transform = `scale(${scale})`;
-  }, SCREENSHOT_SIZE);
+  }, screenshotSize);
 
   await page.screenshot({
     path: screenshotPath,

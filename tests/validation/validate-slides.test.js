@@ -21,6 +21,7 @@ test('parseValidateCliArgs applies defaults and reads --slides-dir', () => {
   assert.deepEqual(parseValidateCliArgs([]), {
     slidesDir: DEFAULT_SLIDES_DIR,
     format: DEFAULT_VALIDATE_FORMAT,
+    mode: 'presentation',
     help: false,
     slides: [],
   });
@@ -28,12 +29,15 @@ test('parseValidateCliArgs applies defaults and reads --slides-dir', () => {
   assert.equal(parseValidateCliArgs(['--slides-dir', 'decks/demo']).slidesDir, 'decks/demo');
   assert.equal(parseValidateCliArgs(['--slides-dir=slides-q1']).slidesDir, 'slides-q1');
   assert.equal(parseValidateCliArgs(['--format', 'json']).format, 'json');
+  assert.equal(parseValidateCliArgs(['--mode', 'card-news']).mode, 'card-news');
   assert.deepEqual(
     parseValidateCliArgs(['--slide', 'slide-02.html', '--slide=slide-03.html']).slides,
     ['slide-02.html', 'slide-03.html'],
   );
   assert.throws(() => parseValidateCliArgs(['--slides-dir']), /missing value/i);
+  assert.throws(() => parseValidateCliArgs(['--mode']), /missing value/i);
   assert.throws(() => parseValidateCliArgs(['--format', 'xml']), /unknown --format value/i);
+  assert.throws(() => parseValidateCliArgs(['--mode', 'story']), /unknown --mode value/i);
 });
 
 test('findSlideFiles sorts slide fixtures deterministically', async () => {
@@ -103,6 +107,28 @@ test('validate CLI defaults to concise output', () => {
   assert.match(command.stdout, /^slide-04\.html:warning\[sibling-overlap\]/m);
   assert.match(command.stdout, /^summary: 4 slide\(s\) checked, 2 passed, 2 failed, 3 error\(s\), 1 warning\(s\)$/m);
   assert.doesNotMatch(command.stdout, /^\s*\{/);
+});
+
+test('validate CLI json-full reports square frame metadata in card-news mode', () => {
+  const command = spawnSync(
+    process.execPath,
+    ['scripts/validate-slides.js', '--slides-dir', fixtureDeckDir, '--mode', 'card-news', '--format', 'json-full'],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    },
+  );
+
+  assert.equal(command.status, 1);
+  assert.equal(command.stderr, '');
+
+  const payload = JSON.parse(command.stdout);
+  assert.deepEqual(payload.frame, {
+    widthPt: 720,
+    heightPt: 720,
+    widthPx: 960,
+    heightPx: 960,
+  });
 });
 
 test('validate CLI json-full preserves legacy detailed result shape', () => {

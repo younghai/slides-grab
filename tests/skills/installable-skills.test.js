@@ -10,6 +10,7 @@ const INSTALLABLE_SKILLS = [
   'skills/slides-grab-plan/SKILL.md',
   'skills/slides-grab-design/SKILL.md',
   'skills/slides-grab-export/SKILL.md',
+  'skills/slides-grab-card-news/SKILL.md',
 ];
 
 test('installable skills use packaged commands and avoid .claude runtime paths', () => {
@@ -40,6 +41,7 @@ test('npm pack includes bundled skill references for installable skills', () => 
   assert.ok(filePaths.has('skills/slides-grab-export/references/html2pptx.md'));
   assert.ok(filePaths.has('skills/slides-grab-export/references/ooxml.md'));
   assert.ok(filePaths.has('skills/slides-grab/references/presentation-workflow-reference.md'));
+  assert.ok(filePaths.has('skills/slides-grab-card-news/SKILL.md'));
   assert.ok(filePaths.has('templates/design-styles/README.md'));
   assert.ok(filePaths.has('scripts/generate-image.js'));
   assert.ok(filePaths.has('src/pptx-raster-export.cjs'));
@@ -153,4 +155,15 @@ test('slides-grab design rules advertise both packaged image and video asset com
 
   assert.match(text, /slides-grab image --prompt/i);
   assert.match(text, /slides-grab fetch-video/i);
+});
+
+
+test('slides-grab card-news skill documents square Instagram workflow via packaged commands', () => {
+  const text = readFileSync('skills/slides-grab-card-news/SKILL.md', 'utf-8');
+
+  assert.match(text, /Instagram/i);
+  assert.match(text, /card-news/i);
+  assert.match(text, /--mode card-news|--slide-mode card-news/);
+  assert.match(text, /slides-grab validate/i);
+  assert.match(text, /slides-grab build-viewer/i);
 });

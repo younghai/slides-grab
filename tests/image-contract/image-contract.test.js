@@ -232,6 +232,7 @@ test('validator CLI args still parse slides-dir', () => {
   assert.deepEqual(parseValidateCliArgs(['--slides-dir', 'decks/demo']), {
     slidesDir: 'decks/demo',
     format: 'concise',
+    mode: 'presentation',
     help: false,
     slides: [],
   });

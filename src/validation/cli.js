@@ -1,3 +1,12 @@
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeChoices,
+  normalizeSlideMode,
+} = require('../slide-mode.cjs');
+
 export const DEFAULT_SLIDES_DIR = 'slides';
 export const DEFAULT_VALIDATE_FORMAT = 'concise';
 export const VALIDATE_FORMATS = ['concise', 'json', 'json-full'];
@@ -14,6 +23,7 @@ export function parseValidateCliArgs(args) {
   const options = {
     slidesDir: DEFAULT_SLIDES_DIR,
     format: DEFAULT_VALIDATE_FORMAT,
+    mode: DEFAULT_SLIDE_MODE,
     help: false,
     slides: [],
   };
@@ -48,6 +58,17 @@ export function parseValidateCliArgs(args) {
       continue;
     }
 
+    if (arg === '--mode') {
+      options.mode = normalizeSlideMode(readOptionValue(args, i, '--mode'));
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--mode=')) {
+      options.mode = normalizeSlideMode(arg.slice('--mode='.length));
+      continue;
+    }
+
     if (arg === '--slide') {
       options.slides.push(readOptionValue(args, i, '--slide'));
       i += 1;
@@ -72,6 +93,7 @@ export function parseValidateCliArgs(args) {
 
   options.slidesDir = options.slidesDir.trim();
   options.format = options.format.trim();
+  options.mode = normalizeSlideMode(options.mode);
 
   if (!VALIDATE_FORMATS.includes(options.format)) {
     throw new Error(`Unknown --format value: ${options.format}. Expected one of: ${VALIDATE_FORMATS.join(', ')}`);
@@ -91,6 +113,7 @@ export function getValidateUsage() {
     'Options:',
     `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
     `  --format <format>   Output format: ${VALIDATE_FORMATS.join(', ')} (default: ${DEFAULT_VALIDATE_FORMAT})`,
+    `  --mode <mode>       Slide mode: ${getSlideModeChoices().join(', ')} (default: ${DEFAULT_SLIDE_MODE})`,
     '  --slide <file>      Validate only the named slide file (repeatable)',
     '  -h, --help           Show this help message',
   ].join('\n');

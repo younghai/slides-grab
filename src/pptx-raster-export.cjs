@@ -9,14 +9,18 @@ const {
   getResolutionSize,
   normalizeResolutionPreset,
 } = require('./export-resolution.cjs');
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeChoices,
+  getSlideModeConfig,
+  normalizeSlideMode,
+} = require('./slide-mode.cjs');
 
 const DEFAULT_SLIDES_DIR = 'slides';
 const DEFAULT_OUTPUT = 'output.pptx';
 const DEFAULT_RESOLUTION = '2160p';
-const DEFAULT_CAPTURE_VIEWPORT = { width: 960, height: 540 };
 const DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR = 2;
 const TARGET_RASTER_DPI = 150;
-const TARGET_SLIDE_SIZE_IN = { width: 13.33, height: 7.5 };
 
 function normalizeDimension(value, fallback) {
   if (!Number.isFinite(value) || value <= 0) {
@@ -25,28 +29,30 @@ function normalizeDimension(value, fallback) {
   return Math.max(1, Math.round(value));
 }
 
-function buildPageOptions(resolution = '') {
-  const targetResolution = getResolutionSize(resolution);
+function buildPageOptions(resolution = '', slideMode = DEFAULT_SLIDE_MODE) {
+  const { framePx } = getSlideModeConfig(slideMode);
+  const targetResolution = getResolutionSize(resolution, slideMode);
   return {
     viewport: {
-      width: DEFAULT_CAPTURE_VIEWPORT.width,
-      height: DEFAULT_CAPTURE_VIEWPORT.height,
+      width: framePx.width,
+      height: framePx.height,
     },
     deviceScaleFactor: targetResolution
-      ? targetResolution.height / DEFAULT_CAPTURE_VIEWPORT.height
+      ? targetResolution.height / framePx.height
       : DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR,
   };
 }
 
-function getTargetRasterSize(resolution = '') {
-  const targetResolution = getResolutionSize(resolution);
+function getTargetRasterSize(resolution = '', slideMode = DEFAULT_SLIDE_MODE) {
+  const targetResolution = getResolutionSize(resolution, slideMode);
   if (targetResolution) {
     return targetResolution;
   }
 
+  const { pptxSizeIn } = getSlideModeConfig(slideMode);
   return {
-    width: Math.round(TARGET_SLIDE_SIZE_IN.width * TARGET_RASTER_DPI),
-    height: Math.round(TARGET_SLIDE_SIZE_IN.height * TARGET_RASTER_DPI),
+    width: Math.round(pptxSizeIn.width * TARGET_RASTER_DPI),
+    height: Math.round(pptxSizeIn.height * TARGET_RASTER_DPI),
   };
 }
 
@@ -58,6 +64,7 @@ function printUsage() {
       'Options:',
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
       `  --output <path>      Output pptx path (default: ${DEFAULT_OUTPUT})`,
+      `  --mode <mode>        Slide mode: ${getSlideModeChoices().join('|')} (default: ${DEFAULT_SLIDE_MODE})`,
       `  --resolution <preset> Raster size preset: ${getResolutionChoices().join('|')}|4k (default: ${DEFAULT_RESOLUTION})`,
       '  -h, --help           Show this help message',
     ].join('\n'),
@@ -77,6 +84,7 @@ function parseArgs(args) {
   const options = {
     slidesDir: DEFAULT_SLIDES_DIR,
     output: DEFAULT_OUTPUT,
+    mode: DEFAULT_SLIDE_MODE,
     resolution: DEFAULT_RESOLUTION,
     help: false,
   };
@@ -110,6 +118,17 @@ function parseArgs(args) {
       continue;
     }
 
+    if (arg === '--mode') {
+      options.mode = normalizeSlideMode(readOptionValue(args, i, '--mode'));
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--mode=')) {
+      options.mode = normalizeSlideMode(arg.slice('--mode='.length));
+      continue;
+    }
+
     if (arg === '--resolution') {
       options.resolution = normalizeResolutionPreset(readOptionValue(args, i, '--resolution'));
       i += 1;
@@ -134,14 +153,17 @@ function parseArgs(args) {
 
   options.slidesDir = options.slidesDir.trim();
   options.output = options.output.trim();
+  options.mode = normalizeSlideMode(options.mode);
   options.resolution = normalizeResolutionPreset(options.resolution);
   return options;
 }
 
 async function convertSlide(htmlFile, pres, browser, options = {}) {
   const filePath = path.isAbsolute(htmlFile) ? htmlFile : path.join(process.cwd(), htmlFile);
+  const slideMode = normalizeSlideMode(options.mode || DEFAULT_SLIDE_MODE);
+  const fallbackSize = getSlideModeConfig(slideMode).framePx;
 
-  const page = await browser.newPage(buildPageOptions(options.resolution));
+  const page = await browser.newPage(buildPageOptions(options.resolution, slideMode));
   await page.goto(`file://${filePath}`);
 
   const bodyDimensions = await page.evaluate(() => {
@@ -154,14 +176,14 @@ async function convertSlide(htmlFile, pres, browser, options = {}) {
   });
 
   await page.setViewportSize({
-    width: normalizeDimension(bodyDimensions.width, DEFAULT_CAPTURE_VIEWPORT.width),
-    height: normalizeDimension(bodyDimensions.height, DEFAULT_CAPTURE_VIEWPORT.height),
+    width: normalizeDimension(bodyDimensions.width, fallbackSize.width),
+    height: normalizeDimension(bodyDimensions.height, fallbackSize.height),
   });
 
   const screenshot = await page.screenshot({ type: 'png' });
   await page.close();
 
-  const targetSize = getTargetRasterSize(options.resolution);
+  const targetSize = getTargetRasterSize(options.resolution, slideMode);
 
   const resized = await sharp(screenshot)
     .resize(targetSize.width, targetSize.height, { fit: 'fill' })
@@ -191,11 +213,17 @@ async function main(argv = process.argv.slice(2)) {
   }
 
   const pres = new PptxGenJS();
-  pres.layout = 'LAYOUT_WIDE';
+  const { pptxSizeIn } = getSlideModeConfig(options.mode);
+  pres.defineLayout({
+    name: 'SLIDES_GRAB_DYNAMIC',
+    width: pptxSizeIn.width,
+    height: pptxSizeIn.height,
+  });
+  pres.layout = 'SLIDES_GRAB_DYNAMIC';
 
   const slidesDir = path.resolve(process.cwd(), options.slidesDir);
   const { ensureSlidesPassValidation } = await import('../scripts/validate-slides.js');
-  await ensureSlidesPassValidation(slidesDir, { exportLabel: 'PPTX export' });
+  await ensureSlidesPassValidation(slidesDir, { exportLabel: 'PPTX export', slideMode: options.mode });
   const files = fs.readdirSync(slidesDir)
     .filter((fileName) => fileName.endsWith('.html'))
     .sort();
@@ -209,7 +237,7 @@ async function main(argv = process.argv.slice(2)) {
     const filePath = path.join(slidesDir, file);
     console.log(`  Processing: ${file}`);
     try {
-      const tmpPath = await convertSlide(filePath, pres, browser, { resolution: options.resolution });
+      const tmpPath = await convertSlide(filePath, pres, browser, { mode: options.mode, resolution: options.resolution });
       tmpFiles.push(tmpPath);
       console.log(`    ✓ ${file} done`);
     } catch (error) {

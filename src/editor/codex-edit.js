@@ -1,11 +1,21 @@
 import { readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 
 import { getPackageRoot } from '../resolve.js';
 
+const require = createRequire(import.meta.url);
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeConfig,
+} = require('../slide-mode.cjs');
+
 export const SLIDE_SIZE = { width: 960, height: 540 };
+export function getSlideSize(slideMode = DEFAULT_SLIDE_MODE) {
+  return getSlideModeConfig(slideMode).framePx;
+}
 
 const PPT_DESIGN_SKILL_PATH = join(getPackageRoot(), 'skills', 'slides-grab-design', 'SKILL.md');
 const EDITOR_CODEX_PROMPT_PATH = join(dirname(new URL(import.meta.url).pathname), 'editor-codex-prompt.md');
@@ -331,11 +341,12 @@ export function getDetailedDesignSkillPrompt() {
   ].filter(Boolean).join('\n\n');
 }
 
-export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, selections = [] }) {
+export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, slideMode = DEFAULT_SLIDE_MODE, selections = [] }) {
   const sanitizedPrompt = typeof userPrompt === 'string' ? userPrompt.trim() : '';
   if (!sanitizedPrompt) {
     throw new Error('Prompt must be a non-empty string.');
   }
+  const { coordinateSpaceLabel, sizeLabel } = getSlideModeConfig(slideMode);
 
   const normalizedSlidePath = typeof slidePath === 'string' && slidePath.trim() !== ''
     ? slidePath.trim()
@@ -357,7 +368,12 @@ export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, selecti
     ];
   });
 
-  const editorPrompt = getEditorPptDesignSkillPrompt();
+  const editorPrompt = getEditorPptDesignSkillPrompt()
+    .replaceAll('720pt x 405pt', sizeLabel)
+    .replace(
+      'Run `slides-grab validate --slides-dir <path>` after editing.',
+      `Run \`slides-grab validate --slides-dir <path>${slideMode === DEFAULT_SLIDE_MODE ? '' : ` --mode ${slideMode}`}\` after editing.`,
+    );
   const editorPromptLines = editorPrompt
     ? [
         'Slide edit rules (follow strictly):',
@@ -373,13 +389,13 @@ export function buildCodexEditPrompt({ slideFile, slidePath, userPrompt, selecti
     'User edit request (this is the primary objective — follow it faithfully):',
     sanitizedPrompt,
     '',
-    'Selected regions on slide (960x540 coordinate space):',
+    `Selected regions on slide (${coordinateSpaceLabel} coordinate space):`,
     ...selectionLines,
     'Rules:',
     '- Edit only the requested slide HTML file among slide-*.html files.',
     '- Do not modify any other slide HTML files unless explicitly requested.',
     '- Keep existing structure/content unless the request requires a change.',
-    '- Keep slide dimensions at 720pt x 405pt.',
+    `- Keep slide dimensions at ${sizeLabel}.`,
     '- Keep text in semantic tags (<p>, <h1>-<h6>, <ul>, <ol>, <li>).',
     '- You may add or update supporting files required for the requested slide, including local images and videos under <slides-dir>/assets/ and tldraw source/export files used to generate those assets.',
     '- When the request needs bespoke imagery, prefer `slides-grab image --prompt "<prompt>" --slides-dir <path>` so Nano Banana Pro saves the asset under <slides-dir>/assets/.',

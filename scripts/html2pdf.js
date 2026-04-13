@@ -16,6 +16,12 @@ const {
   getResolutionSize,
   normalizeResolutionPreset,
 } = require('../src/export-resolution.cjs');
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeChoices,
+  getSlideModeConfig,
+  normalizeSlideMode,
+} = require('../src/slide-mode.cjs');
 
 const DEFAULT_OUTPUT = 'slides.pdf';
 const DEFAULT_SLIDES_DIR = 'slides';
@@ -23,9 +29,7 @@ const DEFAULT_MODE = 'capture';
 const DEFAULT_CAPTURE_RESOLUTION = '2160p';
 const PDF_MODES = new Set(['capture', 'print']);
 const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
-const FALLBACK_SLIDE_SIZE = { width: 960, height: 540 };
 const DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR = 2;
-const TARGET_ASPECT_RATIO = 16 / 9;
 const RENDER_SETTLE_MS = 120;
 const CSS_PIXELS_PER_INCH = 96;
 const PDF_POINTS_PER_INCH = 72;
@@ -40,6 +44,7 @@ function printUsage() {
       `  --output <path>      Output PDF path (default: ${DEFAULT_OUTPUT})`,
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
       `  --mode <mode>        PDF export mode: capture|print (default: ${DEFAULT_MODE})`,
+      `  --slide-mode <mode>  Slide mode: ${getSlideModeChoices().join('|')} (default: ${DEFAULT_SLIDE_MODE})`,
       `  --resolution <preset> Capture raster size preset: ${getResolutionChoices().join('|')}|4k (default: ${DEFAULT_CAPTURE_RESOLUTION}; ignored in print mode)`,
       '  -h, --help           Show this help message',
       '',
@@ -89,8 +94,8 @@ function cssPixelsToPdfPoints(value) {
   return Math.round((normalizeDimension(value, 0) * PDF_POINTS_PER_INCH) / CSS_PIXELS_PER_INCH);
 }
 
-async function normalizeCaptureRasterSize(pngBytes, resolution = '') {
-  const targetSize = getResolutionSize(resolution);
+async function normalizeCaptureRasterSize(pngBytes, resolution = '', slideMode = DEFAULT_SLIDE_MODE) {
+  const targetSize = getResolutionSize(resolution, slideMode);
   if (!targetSize) {
     return pngBytes;
   }
@@ -140,6 +145,7 @@ export function parseCliArgs(args) {
     output: DEFAULT_OUTPUT,
     slidesDir: DEFAULT_SLIDES_DIR,
     mode: DEFAULT_MODE,
+    slideMode: DEFAULT_SLIDE_MODE,
     resolution: DEFAULT_CAPTURE_RESOLUTION,
     help: false,
   };
@@ -185,6 +191,17 @@ export function parseCliArgs(args) {
       continue;
     }
 
+    if (arg === '--slide-mode') {
+      options.slideMode = normalizeSlideMode(readOptionValue(args, i, '--slide-mode'), { optionName: '--slide-mode' });
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--slide-mode=')) {
+      options.slideMode = normalizeSlideMode(arg.slice('--slide-mode='.length), { optionName: '--slide-mode' });
+      continue;
+    }
+
     if (arg === '--resolution') {
       options.resolution = normalizeResolutionPreset(readOptionValue(args, i, '--resolution'));
       i += 1;
@@ -209,6 +226,7 @@ export function parseCliArgs(args) {
   options.output = options.output.trim();
   options.slidesDir = options.slidesDir.trim();
   options.mode = normalizeMode(options.mode);
+  options.slideMode = normalizeSlideMode(options.slideMode, { optionName: '--slide-mode' });
   options.resolution = normalizeResolutionPreset(options.resolution);
   if (options.mode === 'print') {
     options.resolution = '';
@@ -226,9 +244,10 @@ export async function findSlideFiles(slidesDir = resolve(process.cwd(), DEFAULT_
 }
 
 export function buildPdfOptions(widthPx, heightPx) {
+  const fallbackSize = getSlideModeConfig(DEFAULT_SLIDE_MODE).framePx;
   return {
-    width: `${normalizeDimension(widthPx, FALLBACK_SLIDE_SIZE.width)}px`,
-    height: `${normalizeDimension(heightPx, FALLBACK_SLIDE_SIZE.height)}px`,
+    width: `${normalizeDimension(widthPx, fallbackSize.width)}px`,
+    height: `${normalizeDimension(heightPx, fallbackSize.height)}px`,
     printBackground: true,
     pageRanges: '1',
     margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
@@ -236,22 +255,25 @@ export function buildPdfOptions(widthPx, heightPx) {
   };
 }
 
-export function buildPageOptions(mode = DEFAULT_MODE, resolution = '') {
-  const targetResolution = normalizeMode(mode) === 'capture' ? getResolutionSize(resolution) : null;
+export function buildPageOptions(mode = DEFAULT_MODE, resolution = '', slideMode = DEFAULT_SLIDE_MODE) {
+  const { framePx } = getSlideModeConfig(slideMode);
+  const targetResolution = normalizeMode(mode) === 'capture' ? getResolutionSize(resolution, slideMode) : null;
   return {
     viewport: {
-      width: FALLBACK_SLIDE_SIZE.width,
-      height: FALLBACK_SLIDE_SIZE.height,
+      width: framePx.width,
+      height: framePx.height,
     },
     deviceScaleFactor: normalizeMode(mode) === 'capture'
       ? targetResolution
-        ? targetResolution.height / FALLBACK_SLIDE_SIZE.height
+        ? targetResolution.height / framePx.height
         : DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR
       : 1,
   };
 }
 
-function chooseSlideFrame(metrics) {
+function chooseSlideFrame(metrics, slideMode = DEFAULT_SLIDE_MODE) {
+  const { framePx } = getSlideModeConfig(slideMode);
+  const targetAspectRatio = framePx.width / framePx.height;
   const viewportArea = Math.max(1, metrics.viewport.width * metrics.viewport.height);
   const bodyArea = Math.max(1, metrics.body.width * metrics.body.height);
   const bodyScrollArea = Math.max(1, metrics.body.scrollWidth * metrics.body.scrollHeight);
@@ -269,7 +291,7 @@ function chooseSlideFrame(metrics) {
     .map((candidate) => ({
       ...candidate,
       area: candidate.width * candidate.height,
-      aspectDelta: Math.abs(candidate.width / candidate.height - TARGET_ASPECT_RATIO),
+      aspectDelta: Math.abs(candidate.width / candidate.height - targetAspectRatio),
       coverage: (candidate.width * candidate.height) / viewportArea,
     }))
     .sort((left, right) => right.area - left.area);
@@ -359,7 +381,7 @@ export async function waitForSlideRenderReady(page, options = {}) {
   }, { settleMs, runReadySignal: shouldRunReadySignal });
 }
 
-export async function detectSlideFrame(page) {
+export async function detectSlideFrame(page, slideMode = DEFAULT_SLIDE_MODE) {
   const metrics = await page.evaluate(() => {
     function toBox(element) {
       const rect = element.getBoundingClientRect();
@@ -398,12 +420,13 @@ export async function detectSlideFrame(page) {
     };
   });
 
-  const frame = chooseSlideFrame(metrics);
+  const frame = chooseSlideFrame(metrics, slideMode);
+  const fallbackSize = getSlideModeConfig(slideMode).framePx;
   return {
     x: normalizeDimension(frame.x, 0),
     y: normalizeDimension(frame.y, 0),
-    width: normalizeDimension(frame.width, FALLBACK_SLIDE_SIZE.width),
-    height: normalizeDimension(frame.height, FALLBACK_SLIDE_SIZE.height),
+    width: normalizeDimension(frame.width, fallbackSize.width),
+    height: normalizeDimension(frame.height, fallbackSize.height),
     candidateIndex: Number.isInteger(frame.candidateIndex) ? frame.candidateIndex : null,
     source: frame.source,
   };
@@ -641,20 +664,22 @@ export async function renderSlideToPdf(page, slideFile, slidesDir, options = {})
   const slidePath = join(slidesDir, slideFile);
   const slideUrl = pathToFileURL(slidePath).href;
   const mode = normalizeMode(options.mode ?? DEFAULT_MODE);
+  const slideMode = normalizeSlideMode(options.slideMode ?? DEFAULT_SLIDE_MODE, { optionName: '--slide-mode' });
   const captureResolution = mode === 'capture' ? normalizeResolutionPreset(options.resolution ?? '') : '';
 
   await page.goto(slideUrl, { waitUntil: 'load' });
   await waitForSlideRenderReady(page, options);
 
-  const slideFrame = await detectSlideFrame(page);
+  const slideFrame = await detectSlideFrame(page, slideMode);
   const normalizedSlideFrame = await isolateSlideFrame(page, slideFrame);
   await normalizeBodyToSlideFrame(page, normalizedSlideFrame);
   await waitForSlideRenderReady(page, { ...options, runReadySignal: false });
 
   if (mode === 'capture') {
+    const fallbackSize = getSlideModeConfig(slideMode).framePx;
     const viewportSize = {
-      width: normalizeDimension(normalizedSlideFrame.width, FALLBACK_SLIDE_SIZE.width),
-      height: normalizeDimension(normalizedSlideFrame.height, FALLBACK_SLIDE_SIZE.height),
+      width: normalizeDimension(normalizedSlideFrame.width, fallbackSize.width),
+      height: normalizeDimension(normalizedSlideFrame.height, fallbackSize.height),
     };
     await page.setViewportSize(viewportSize);
     await waitForSlideRenderReady(page, { ...options, runReadySignal: false });
@@ -679,9 +704,10 @@ export async function renderSlideToPdf(page, slideFile, slidesDir, options = {})
         height: viewportSize.height,
       },
     });
-    const normalizedPngBytes = await normalizeCaptureRasterSize(pngBytes, captureResolution);
+    const normalizedPngBytes = await normalizeCaptureRasterSize(pngBytes, captureResolution, slideMode);
     return {
       mode,
+      slideMode,
       width: normalizedSlideFrame.width,
       height: normalizedSlideFrame.height,
       pngBytes: normalizedPngBytes,
@@ -692,6 +718,7 @@ export async function renderSlideToPdf(page, slideFile, slidesDir, options = {})
 
   return {
     mode,
+    slideMode,
     width: normalizedSlideFrame.width,
     height: normalizedSlideFrame.height,
     pdfBytes: await page.pdf(buildPdfOptions(normalizedSlideFrame.width, normalizedSlideFrame.height)),
@@ -740,14 +767,14 @@ async function main() {
   }
 
   const slidesDir = resolve(process.cwd(), options.slidesDir);
-  await ensureSlidesPassValidation(slidesDir, { exportLabel: 'PDF export' });
+  await ensureSlidesPassValidation(slidesDir, { exportLabel: 'PDF export', slideMode: options.slideMode });
   const slideFiles = await findSlideFiles(slidesDir);
   if (slideFiles.length === 0) {
     throw new Error(`No slide-*.html files found in: ${slidesDir}`);
   }
 
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage(buildPageOptions(options.mode, options.resolution));
+  const page = await browser.newPage(buildPageOptions(options.mode, options.resolution, options.slideMode));
   const diagnostics = createSlideDiagnostics();
   diagnostics.attach(page);
   const renderedSlides = [];
@@ -758,6 +785,7 @@ async function main() {
       try {
         const slideResult = await renderSlideToPdf(page, slideFile, slidesDir, {
           mode: options.mode,
+          slideMode: options.slideMode,
           resolution: options.resolution,
         });
         renderedSlides.push(slideResult);

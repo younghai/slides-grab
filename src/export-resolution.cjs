@@ -1,8 +1,13 @@
-const RESOLUTION_PRESETS = Object.freeze({
-  '720p': { width: 1280, height: 720 },
-  '1080p': { width: 1920, height: 1080 },
-  '1440p': { width: 2560, height: 1440 },
-  '2160p': { width: 3840, height: 2160 },
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeConfig,
+} = require('./slide-mode.cjs');
+
+const RESOLUTION_HEIGHTS = Object.freeze({
+  '720p': 720,
+  '1080p': 1080,
+  '1440p': 1440,
+  '2160p': 2160,
 });
 
 const RESOLUTION_ALIASES = Object.freeze({
@@ -11,7 +16,7 @@ const RESOLUTION_ALIASES = Object.freeze({
 });
 
 function getResolutionChoices() {
-  return Object.keys(RESOLUTION_PRESETS);
+  return Object.keys(RESOLUTION_HEIGHTS);
 }
 
 function normalizeResolutionPreset(value, options = {}) {
@@ -33,25 +38,30 @@ function normalizeResolutionPreset(value, options = {}) {
   }
 
   const normalized = RESOLUTION_ALIASES[trimmed] || trimmed;
-  if (!RESOLUTION_PRESETS[normalized]) {
+  if (!RESOLUTION_HEIGHTS[normalized]) {
     throw new Error(`Unknown resolution "${value}". Expected one of: ${getResolutionChoices().join(', ')}, 4k`);
   }
 
   return normalized;
 }
 
-function getResolutionSize(value) {
+function getResolutionSize(value, slideMode = DEFAULT_SLIDE_MODE) {
   const normalized = normalizeResolutionPreset(value);
   if (!normalized) {
     return null;
   }
 
-  const preset = RESOLUTION_PRESETS[normalized];
-  return { width: preset.width, height: preset.height };
+  const height = RESOLUTION_HEIGHTS[normalized];
+  const { framePx } = getSlideModeConfig(slideMode);
+  const aspectRatio = framePx.width / framePx.height;
+  return {
+    width: Math.round(height * aspectRatio),
+    height,
+  };
 }
 
 module.exports = {
-  RESOLUTION_PRESETS,
+  RESOLUTION_PRESETS: RESOLUTION_HEIGHTS,
   getResolutionChoices,
   getResolutionSize,
   normalizeResolutionPreset,

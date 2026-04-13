@@ -17,6 +17,7 @@ import {
 
 const require = createRequire(import.meta.url);
 const html2pptx = require('../src/html2pptx.cjs');
+const { DEFAULT_SLIDE_MODE, getSlideModeChoices, normalizeSlideMode } = require('../src/slide-mode.cjs');
 
 const DEFAULT_SLIDES_DIR = 'slides';
 
@@ -28,6 +29,7 @@ function printUsage() {
       'Options:',
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
       '  --output <path>      Output PPTX file (default: <slides-dir>-figma.pptx)',
+      `  --mode <mode>        Slide mode: ${getSlideModeChoices().join('|')} (default: ${DEFAULT_SLIDE_MODE})`,
       '  -h, --help           Show this help message',
       '',
       'Exports an experimental / unstable Figma Slides importable PPTX using the existing html2pptx pipeline.',
@@ -49,6 +51,7 @@ function parseArgs(args) {
   const options = {
     slidesDir: DEFAULT_SLIDES_DIR,
     output: '',
+    mode: DEFAULT_SLIDE_MODE,
     help: false,
   };
 
@@ -81,6 +84,17 @@ function parseArgs(args) {
       continue;
     }
 
+    if (arg === '--mode') {
+      options.mode = normalizeSlideMode(readOptionValue(args, i, '--mode'));
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--mode=')) {
+      options.mode = normalizeSlideMode(arg.slice('--mode='.length));
+      continue;
+    }
+
     throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -89,6 +103,7 @@ function parseArgs(args) {
   }
 
   options.slidesDir = options.slidesDir.trim();
+  options.mode = normalizeSlideMode(options.mode);
   options.output = normalizeFigmaOutput(options.slidesDir, options.output);
   return options;
 }
@@ -121,7 +136,7 @@ async function main() {
   const files = getHtmlSlides(slidesDir);
 
   const pres = new PptxGenJS();
-  configureFigmaExportPresentation(pres);
+  configureFigmaExportPresentation(pres, options.mode);
 
   console.log(`Exporting ${files.length} slide(s) for Figma from ${slidesDir}`);
 

@@ -9,15 +9,19 @@ test('parseArgs applies default slides dir and output', () => {
   assert.deepEqual(parseArgs([]), {
     slidesDir: 'slides',
     output: 'output.pptx',
+    mode: 'presentation',
     resolution: '2160p',
     help: false,
   });
 });
 
 test('parseArgs reads resolution presets and normalizes aliases', () => {
+  assert.equal(parseArgs(['--mode', 'card-news']).mode, 'card-news');
   assert.equal(parseArgs(['--resolution', '1440p']).resolution, '1440p');
   assert.equal(parseArgs(['--resolution=4k']).resolution, '2160p');
+  assert.throws(() => parseArgs(['--mode']), /missing value/i);
   assert.throws(() => parseArgs(['--resolution']), /missing value/i);
+  assert.throws(() => parseArgs(['--mode', 'story']), /unknown --mode value/i);
   assert.throws(() => parseArgs(['--resolution', 'retina']), /unknown resolution/i);
 });
 
@@ -45,6 +49,19 @@ test('getTargetRasterSize preserves the legacy 150 DPI slide target by default',
 test('getTargetRasterSize returns preset raster dimensions when requested', () => {
   assert.deepEqual(getTargetRasterSize('1440p'), {
     width: 2560,
+    height: 1440,
+  });
+});
+
+
+test('buildPageOptions and raster size switch to square outputs for card-news mode', () => {
+  assert.deepEqual(buildPageOptions('2160p', 'card-news'), {
+    viewport: { width: 960, height: 960 },
+    deviceScaleFactor: 2160 / 960,
+  });
+
+  assert.deepEqual(getTargetRasterSize('1440p', 'card-news'), {
+    width: 1440,
     height: 1440,
   });
 });
