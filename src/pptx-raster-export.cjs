@@ -21,6 +21,7 @@ const DEFAULT_OUTPUT = 'output.pptx';
 const DEFAULT_RESOLUTION = '2160p';
 const DEFAULT_CAPTURE_DEVICE_SCALE_FACTOR = 2;
 const TARGET_RASTER_DPI = 150;
+const SLIDE_FILE_PATTERN = /^slide-.*\.html$/i;
 
 function normalizeDimension(value, fallback) {
   if (!Number.isFinite(value) || value <= 0) {
@@ -54,6 +55,36 @@ function getTargetRasterSize(resolution = '', slideMode = DEFAULT_SLIDE_MODE) {
     width: Math.round(pptxSizeIn.width * TARGET_RASTER_DPI),
     height: Math.round(pptxSizeIn.height * TARGET_RASTER_DPI),
   };
+}
+
+function toSlideOrder(fileName) {
+  const match = fileName.match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : Number.POSITIVE_INFINITY;
+}
+
+function sortSlideFiles(a, b) {
+  const orderA = toSlideOrder(a);
+  const orderB = toSlideOrder(b);
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+  return a.localeCompare(b);
+}
+
+function getHtmlSlides(slidesDir) {
+  if (!fs.existsSync(slidesDir)) {
+    throw new Error(`Slides directory not found: ${slidesDir}`);
+  }
+
+  const files = fs.readdirSync(slidesDir)
+    .filter((fileName) => SLIDE_FILE_PATTERN.test(fileName))
+    .sort(sortSlideFiles);
+
+  if (files.length === 0) {
+    throw new Error(`No slide-*.html files found in ${slidesDir}`);
+  }
+
+  return files;
 }
 
 function printUsage() {
@@ -224,9 +255,7 @@ async function main(argv = process.argv.slice(2)) {
   const slidesDir = path.resolve(process.cwd(), options.slidesDir);
   const { ensureSlidesPassValidation } = await import('../scripts/validate-slides.js');
   await ensureSlidesPassValidation(slidesDir, { exportLabel: 'PPTX export', slideMode: options.mode });
-  const files = fs.readdirSync(slidesDir)
-    .filter((fileName) => fileName.endsWith('.html'))
-    .sort();
+  const files = getHtmlSlides(slidesDir);
 
   console.log(`Converting ${files.length} slides...`);
 
@@ -260,6 +289,7 @@ async function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   buildPageOptions,
+  getHtmlSlides,
   getTargetRasterSize,
   main,
   parseArgs,

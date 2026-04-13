@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const { buildPageOptions, getTargetRasterSize, parseArgs } = require('../../src/pptx-raster-export.cjs');
+const { buildPageOptions, getHtmlSlides, getTargetRasterSize, parseArgs } = require('../../src/pptx-raster-export.cjs');
 
 test('parseArgs applies default slides dir and output', () => {
   assert.deepEqual(parseArgs([]), {
@@ -53,6 +56,22 @@ test('getTargetRasterSize returns preset raster dimensions when requested', () =
   });
 });
 
+test('getHtmlSlides only returns slide-*.html deck files', async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'pptx-raster-export-'));
+  try {
+    await Promise.all([
+      writeFile(path.join(tempDir, 'slide-10.html'), ''),
+      writeFile(path.join(tempDir, 'slide-2.html'), ''),
+      writeFile(path.join(tempDir, 'slide-01.html'), ''),
+      writeFile(path.join(tempDir, 'viewer.html'), ''),
+      writeFile(path.join(tempDir, 'notes.html'), ''),
+    ]);
+
+    assert.deepEqual(getHtmlSlides(tempDir), ['slide-01.html', 'slide-2.html', 'slide-10.html']);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
 
 test('buildPageOptions and raster size switch to square outputs for card-news mode', () => {
   assert.deepEqual(buildPageOptions('2160p', 'card-news'), {
