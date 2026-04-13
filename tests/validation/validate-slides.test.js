@@ -228,3 +228,27 @@ test('slides-grab lint aliases validate output and exit code', () => {
   assert.equal(payload.summary.failedSlides, 2);
   assert.equal(payload.summary.errors, 3);
 });
+
+test('slides-grab mode-aware help covers card-news CLI entrypoints', () => {
+  const helpCommands = [
+    ['build-viewer', /Slide mode: presentation or card-news/],
+    ['validate', /Slide mode: presentation or card-news/],
+    ['convert', /Slide mode: presentation or card-news/],
+    ['pdf', /Slide mode: presentation or card-news/],
+    ['figma', /Slide mode: presentation or card-news/],
+    ['edit', /Slide mode: presentation or card-news/],
+  ];
+
+  for (const [subcommand, expectedModeLine] of helpCommands) {
+    const command = spawnSync(process.execPath, ['bin/ppt-agent.js', subcommand, '--help'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+
+    assert.equal(command.status, 0, `${subcommand} --help should exit cleanly`);
+    assert.equal(command.stderr, '');
+    assert.match(command.stdout, new RegExp(`slides-grab ${subcommand}`));
+    assert.match(command.stdout, expectedModeLine);
+    assert.match(command.stdout, /card-news/);
+  }
+});

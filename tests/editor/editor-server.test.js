@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, chmod } from 'node:fs/promises';
 import os from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,24 +13,45 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function createWorkspace() {
+async function createWorkspace({ slideHtml } = {}) {
   const workspace = await mkdtemp(join(os.tmpdir(), 'editor-server-test-'));
   const slidesDir = join(workspace, 'slides');
   await mkdir(slidesDir, { recursive: true });
-  await writeFile(join(slidesDir, 'slide-01.html'), '<!doctype html><html><body><div><h1>Test</h1><p>Slide</p></div></body></html>', 'utf8');
+  await writeFile(
+    join(slidesDir, 'slide-01.html'),
+    slideHtml || '<!doctype html><html><body><div><h1>Test</h1><p>Slide</p></div></body></html>',
+    'utf8',
+  );
   return workspace;
 }
 
-function spawnEditorServer(workspace, port) {
+async function writeMockCli(workspace, fileName) {
+  const mockPath = join(workspace, fileName);
+  const script = `#!/usr/bin/env node
+const prompt = process.argv[process.argv.length - 1] || '';
+process.stdout.write(prompt);
+process.exit(0);
+`;
+  await writeFile(mockPath, script, 'utf8');
+  await chmod(mockPath, 0o755);
+  return mockPath;
+}
+
+function spawnEditorServer(workspace, port, { args = [], env = {} } = {}) {
   const output = { value: '' };
-  const child = spawn(process.execPath, [join(REPO_ROOT, 'scripts', 'editor-server.js'), '--port', String(port)], {
-    cwd: workspace,
-    env: {
-      ...process.env,
-      PPT_AGENT_PACKAGE_ROOT: REPO_ROOT,
+  const child = spawn(
+    process.execPath,
+    [join(REPO_ROOT, 'scripts', 'editor-server.js'), '--port', String(port), ...args],
+    {
+      cwd: workspace,
+      env: {
+        ...process.env,
+        PPT_AGENT_PACKAGE_ROOT: REPO_ROOT,
+        ...env,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
     },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  );
 
   child.stdout.on('data', (chunk) => {
     output.value += chunk.toString();
@@ -115,6 +136,80 @@ test('refuses to open a second editor when another slides-grab editor already ow
     assert.equal(res.ok, true, `first editor should still be serving slides\n${first.output.value}`);
   } finally {
     await stopChild(first.child);
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('card-news editor mode passes square sizing guidance into Codex apply runs', async () => {
+  const workspace = await createWorkspace({
+    slideHtml: `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; width: 960px; height: 960px; overflow: hidden; }
+      body { font-family: sans-serif; }
+      .frame { width: 960px; height: 960px; padding: 48px; box-sizing: border-box; }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <h1>Square headline</h1>
+      <p>Card-news body copy.</p>
+    </div>
+  </body>
+</html>`,
+  });
+  const mockCodex = await writeMockCli(workspace, 'mock-codex.js');
+  const port = await getAvailablePort();
+  const server = spawnEditorServer(workspace, port, {
+    args: ['--mode', 'card-news'],
+    env: {
+      PPT_AGENT_CODEX_BIN: mockCodex,
+    },
+  });
+
+  try {
+    await waitForServerReady(port, server.child, server.output);
+
+    const applyRes = await fetch(`http://localhost:${port}/api/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slide: 'slide-01.html',
+        prompt: 'Tighten the square cover composition.',
+        selections: [
+          {
+            x: 80,
+            y: 120,
+            width: 420,
+            height: 360,
+            targets: [
+              {
+                xpath: '/html/body/div[1]/h1[1]',
+                tag: 'h1',
+                text: 'Square headline',
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    const applyBody = await applyRes.json();
+    assert.equal(applyRes.status, 200, JSON.stringify(applyBody));
+    assert.equal(applyBody.success, true);
+    assert.equal(applyBody.selectionsCount, 1);
+
+    const logRes = await fetch(`http://localhost:${port}/api/runs/${applyBody.runId}/log`);
+    assert.equal(logRes.status, 200);
+    const log = await logRes.text();
+
+    assert.match(log, /Selected regions on slide \(960x960 coordinate space\):/);
+    assert.match(log, /Keep slide dimensions at 720pt x 720pt\./);
+    assert.match(log, /slides-grab validate --slides-dir <path> --mode card-news/);
+  } finally {
+    await stopChild(server.child);
     await rm(workspace, { recursive: true, force: true });
   }
 });
