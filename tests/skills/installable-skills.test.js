@@ -163,6 +163,7 @@ test('slides-grab design rules advertise both packaged image and video asset com
 test('slides-grab packaged guidance prefers Lucide as the default icon library', () => {
   const designSkill = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
   const designRules = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
+  const detailedDesignRules = readFileSync('skills/slides-grab-design/references/detailed-design-rules.md', 'utf-8');
   const exportReference = readFileSync('skills/slides-grab-export/references/html2pptx.md', 'utf-8');
   const packageManifest = JSON.parse(readFileSync('package.json', 'utf-8'));
 
@@ -170,6 +171,8 @@ test('slides-grab packaged guidance prefers Lucide as the default icon library',
   assert.match(designSkill, /prefer Lucide/i);
   assert.match(designRules, /Lucide/i);
   assert.match(designRules, /avoid emoji as the default/i);
+  assert.match(detailedDesignRules, /Prefer Lucide as the default icon library/i);
+  assert.match(detailedDesignRules, /Do not default to emoji/i);
   assert.match(exportReference, /lucide-react/);
   assert.doesNotMatch(exportReference, /react-icons/);
   assert.match(packageManifest.dependencies['lucide-react'], /^\^?\d+\.\d+\.\d+$/);

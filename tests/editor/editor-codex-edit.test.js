@@ -81,6 +81,8 @@ test('buildCodexEditPrompt includes user prompt, bbox, and XPath targets', () =>
   assert.match(prompt, /Slide edit rules \(follow strictly\):/);
   assert.match(prompt, /primary objective/i);
   assert.match(prompt, /Keep slide size appropriate for the current mode/);
+  assert.match(prompt, /Prefer Lucide as the default icon library/i);
+  assert.match(prompt, /Do not default to emoji/i);
   assert.match(prompt, /slides-grab image/i);
   assert.match(prompt, /GOOGLE_API_KEY|GEMINI_API_KEY/);
   assert.match(prompt, /Edit only the requested slide HTML file among slide-\*\.html files\./);
@@ -154,6 +156,9 @@ test('getDetailedDesignSkillPrompt loads only relevant detailed design sections'
   assert.match(detailedPrompt, /## Base Settings/);
   assert.match(detailedPrompt, /### 4\. Image Usage Rules/);
   assert.match(detailedPrompt, /## Text Usage Rules/);
+  assert.match(detailedPrompt, /## Icon Usage Rules/);
+  assert.match(detailedPrompt, /Prefer Lucide as the default icon library/i);
+  assert.match(detailedPrompt, /Do not default to emoji/i);
   assert.match(detailedPrompt, /## Workflow \(Stage 2: Design \+ Human Review\)/);
   assert.match(detailedPrompt, /## Important Notes/);
   assert.match(detailedPrompt, /## Beautiful Defaults for Slides/);
@@ -163,7 +168,6 @@ test('getDetailedDesignSkillPrompt loads only relevant detailed design sections'
   assert.match(detailedPrompt, /Would this still feel premium without shadows, cards, or extra chrome\?/i);
   assert.match(detailedPrompt, /local videos/i);
   assert.match(detailedPrompt, /fetch-video|yt-dlp/i);
-  assert.match(detailedPrompt, /Nano Banana API fails|Nano Banana is down/i);
   assert.match(detailedPrompt, /Nano Banana API fails|Nano Banana is down/i);
   assert.doesNotMatch(detailedPrompt, /## Core Design Philosophy/);
   assert.doesNotMatch(detailedPrompt, /### 1\. Chart\.js/);
