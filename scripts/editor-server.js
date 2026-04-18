@@ -584,6 +584,18 @@ async function startServer(opts) {
     }
   });
 
+  app.get('/api/config', (_req, res) => {
+    const cfg = getSlideModeConfig(opts.mode);
+    res.json({
+      slideMode: opts.mode,
+      framePx: { width: cfg.framePx.width, height: cfg.framePx.height },
+      screenshotPx: { width: cfg.screenshotPx.width, height: cfg.screenshotPx.height },
+      sizeLabel: cfg.sizeLabel,
+      aspectRatioLabel: cfg.aspectRatioLabel,
+      coordinateSpaceLabel: cfg.coordinateSpaceLabel,
+    });
+  });
+
   app.get('/api/models', (_req, res) => {
     res.json({
       models: ALL_MODELS,

@@ -153,6 +153,27 @@ program
   });
 
 program
+  .command('png')
+  .description('Render slide HTML files to one PNG per slide')
+  .option('--slides-dir <path>', 'Slide directory', 'slides')
+  .option('--output-dir <path>', 'Output directory for PNG files (default: <slides-dir>/out-png)')
+  .option('--slide-mode <mode>', 'Slide mode: presentation or card-news', 'presentation')
+  .option('--resolution <preset>', 'Raster size preset: 720p, 1080p, 1440p, 2160p, or 4k', '2160p')
+  .action(async (options = {}) => {
+    const args = ['--slides-dir', options.slidesDir];
+    if (options.outputDir) {
+      args.push('--output-dir', String(options.outputDir));
+    }
+    if (options.slideMode) {
+      args.push('--slide-mode', String(options.slideMode));
+    }
+    if (options.resolution) {
+      args.push('--resolution', String(options.resolution));
+    }
+    await runCommand('scripts/html2png.js', args);
+  });
+
+program
   .command('fetch-video')
   .description('Download a video into <slides-dir>/assets via yt-dlp and print the ./assets reference')
   .requiredOption('--url <url>', 'Video page URL to download with yt-dlp')
