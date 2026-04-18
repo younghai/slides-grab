@@ -10,6 +10,7 @@ import { ensureOutputDirectory, SLIDE_FILE_PATTERN, sortFigmaSlideFiles } from '
 
 const require = createRequire(import.meta.url);
 const html2pptx = require('../src/html2pptx.cjs');
+const { DEFAULT_SLIDE_MODE, getSlideModeChoices, getSlideModeConfig, normalizeSlideMode } = require('../src/slide-mode.cjs');
 
 const DEFAULT_SLIDES_DIR = 'slides';
 const DEFAULT_OUTPUT = 'output.pptx';
@@ -22,6 +23,7 @@ function printUsage() {
       'Options:',
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
       `  --output <path>      Output PPTX file (default: ${DEFAULT_OUTPUT})`,
+      `  --mode <mode>        Slide mode: ${getSlideModeChoices().join('|')} (default: ${DEFAULT_SLIDE_MODE})`,
       '  -h, --help           Show this help message',
       '',
       'Experimental / unstable PPTX export. Treat output as best-effort only.',
@@ -42,6 +44,7 @@ function parseArgs(args) {
   const options = {
     slidesDir: DEFAULT_SLIDES_DIR,
     output: DEFAULT_OUTPUT,
+    mode: DEFAULT_SLIDE_MODE,
     help: false,
   };
 
@@ -74,6 +77,17 @@ function parseArgs(args) {
       continue;
     }
 
+    if (arg === '--mode') {
+      options.mode = normalizeSlideMode(readOptionValue(args, i, '--mode'));
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--mode=')) {
+      options.mode = normalizeSlideMode(arg.slice('--mode='.length));
+      continue;
+    }
+
     throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -87,6 +101,7 @@ function parseArgs(args) {
 
   options.slidesDir = options.slidesDir.trim();
   options.output = options.output.trim();
+  options.mode = normalizeSlideMode(options.mode);
   return options;
 }
 
@@ -118,7 +133,13 @@ async function main() {
   const files = getHtmlSlides(slidesDir);
 
   const pres = new PptxGenJS();
-  pres.layout = 'LAYOUT_WIDE';
+  const { pptxSizeIn } = getSlideModeConfig(options.mode);
+  pres.defineLayout({
+    name: 'SLIDES_GRAB_HTML2PPTX',
+    width: pptxSizeIn.width,
+    height: pptxSizeIn.height,
+  });
+  pres.layout = 'SLIDES_GRAB_HTML2PPTX';
 
   for (const file of files) {
     await html2pptx(resolve(slidesDir, file), pres);

@@ -1,7 +1,14 @@
 // editor-state.js — State variables, constants, Maps/Sets
 
-export const SLIDE_W = 960;
-export const SLIDE_H = 540;
+export let SLIDE_W = 960;
+export let SLIDE_H = 540;
+
+export function setSlideFrame(width, height) {
+  const w = Number(width);
+  const h = Number(height);
+  if (Number.isFinite(w) && w > 0) SLIDE_W = Math.round(w);
+  if (Number.isFinite(h) && h > 0) SLIDE_H = Math.round(h);
+}
 export const TOOL_MODE_DRAW = 'draw';
 export const TOOL_MODE_SELECT = 'select';
 export const POPOVER_TEXT = 'text';

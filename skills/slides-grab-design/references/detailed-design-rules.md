@@ -24,6 +24,11 @@
 - All text must be inside `<p>`, `<h1>`-`<h6>`, `<ul>`, `<ol>`, or `<li>`.
 - Never place text directly in `<div>` or `<span>`.
 
+## Icon Usage Rules
+- Prefer Lucide as the default icon library for slide UI elements, callouts, and supporting visuals.
+- Do not default to emoji for iconography; reserve emoji for cases where the brief explicitly wants a playful or native-emoji tone.
+- Keep icon sizing, stroke weight, and color aligned with the deck's approved design tokens.
+
 ## Workflow (Stage 2: Design + Human Review)
 - After slide generation or edits, run `slides-grab validate --slides-dir <path>`.
 - After validation passes, run `slides-grab build-viewer --slides-dir <path>`.

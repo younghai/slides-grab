@@ -19,6 +19,11 @@ These are the packaged design rules for installable `slides-grab` skills.
 - CSS colors must include `#`
 - Avoid CSS gradients for PPTX-targeted decks
 
+## Icon guidance
+- Prefer Lucide as the default icon library when a slide needs iconography.
+- Avoid emoji as the default icon treatment; only use emoji when the brief explicitly calls for them.
+- Keep icons visually consistent within a deck (stroke weight, size, and color should follow the slide's design tokens).
+
 ## Asset rules
 - Store deck-local assets in `<slides-dir>/assets/`
 - Reference deck-local assets as `./assets/<file>`

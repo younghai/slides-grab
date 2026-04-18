@@ -15,7 +15,7 @@ The user's edit request is the primary objective. All rules below exist to suppo
 5. Return after applying the change.
 
 ## Slide Rules
-- Keep slide size 720pt x 405pt.
+- Keep slide size appropriate for the current mode (`720pt x 405pt` for presentation, `720pt x 720pt` for card-news).
 - Keep semantic text tags (`p`, `h1-h6`, `ul`, `ol`, `li`).
 - Never place text directly in `<div>` or `<span>`.
 - Always include `#` prefix in CSS colors.
@@ -38,6 +38,8 @@ The user's edit request is the primary objective. All rules below exist to suppo
 - Give each slide one job, one dominant visual anchor, one primary takeaway.
 - Keep copy short enough to scan in seconds.
 - Use whitespace, alignment, scale, cropping, and contrast before adding decorative chrome.
+- Prefer Lucide as the default icon library for slide UI elements, callouts, and supporting visuals.
+- Do not default to emoji for iconography unless the brief explicitly asks for a playful or native-emoji tone.
 - Default to cardless layouts unless a card improves structure.
 - Limit to two typefaces max and one accent color.
 

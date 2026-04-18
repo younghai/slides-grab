@@ -84,6 +84,8 @@ slides-grab figma             # Export an experimental / unstable Figma Slides i
 slides-grab pdf               # Export PDF in capture mode (default)
 slides-grab pdf --resolution 2160p  # Higher-resolution image-backed PDF export
 slides-grab pdf --mode print  # Export searchable/selectable text PDF
+slides-grab png               # Render one PNG per slide (default 2160p)
+slides-grab png --slide-mode card-news  # Render square 1:1 PNGs for Instagram
 slides-grab image --prompt "..."    # Generate a local slide image with Nano Banana Pro
 slides-grab fetch-video --url <youtube-url> --slides-dir decks/my-deck  # Download a local video asset with yt-dlp
 slides-grab tldraw           # Render a .tldr diagram into a slide-sized local SVG asset
@@ -153,11 +155,25 @@ slides-grab edit       --slides-dir decks/my-deck
 slides-grab validate   --slides-dir decks/my-deck
 slides-grab pdf        --slides-dir decks/my-deck --output decks/my-deck.pdf
 slides-grab pdf        --slides-dir decks/my-deck --mode print --output decks/my-deck-searchable.pdf
+slides-grab png        --slides-dir decks/my-deck --output-dir decks/my-deck/out-png
 slides-grab convert    --slides-dir decks/my-deck --output decks/my-deck.pptx
 slides-grab figma      --slides-dir decks/my-deck --output decks/my-deck-figma.pptx
 ```
 
 > **Warning:** `slides-grab convert` and `slides-grab figma` are currently **experimental / unstable**. Expect best-effort output, layout shifts, and manual cleanup in PowerPoint or Figma.
+
+### Card News (Square 1:1) Workflow
+
+Instagram-style card news uses a 720pt × 720pt frame end-to-end. Pass `--mode card-news` (or `--slide-mode card-news` for `pdf`/`png`) at every stage and prefer `slides-grab png` as the primary export so each card becomes an Instagram-ready PNG.
+
+```bash
+slides-grab edit     --slides-dir decks/my-cards --mode card-news
+slides-grab validate --slides-dir decks/my-cards --mode card-news
+slides-grab png      --slides-dir decks/my-cards --slide-mode card-news --resolution 2160p
+# Optional extras (PPTX / Figma remain experimental / unstable)
+slides-grab pdf      --slides-dir decks/my-cards --slide-mode card-news --output decks/my-cards.pdf
+slides-grab convert  --slides-dir decks/my-cards --mode card-news --output decks/my-cards.pptx
+```
 
 ### Tldraw Diagram Assets
 

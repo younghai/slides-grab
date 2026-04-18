@@ -1,8 +1,8 @@
 // editor-init.js — Entry point: imports, event bindings, init()
 
-import { state, TOOL_MODE_DRAW, TOOL_MODE_SELECT } from './editor-state.js';
+import { state, TOOL_MODE_DRAW, TOOL_MODE_SELECT, setSlideFrame } from './editor-state.js';
 import {
-  btnPrev, btnNext, slideIframe, drawLayer, promptInput, modelSelect,
+  btnPrev, btnNext, slideIframe, slideWrapper, drawLayer, promptInput, modelSelect,
   btnSend, btnClearBboxes, slideCounter,
   toggleBold, toggleItalic, toggleUnderline, toggleStrike,
   alignLeft, alignCenter, alignRight,
@@ -256,9 +256,41 @@ slideIframe.addEventListener('load', () => {
   updateSendState();
 });
 
+function applySlideFrameCss(width, height) {
+  if (slideWrapper) {
+    slideWrapper.style.width = `${width}px`;
+    slideWrapper.style.height = `${height}px`;
+  }
+  if (slideIframe) {
+    slideIframe.style.width = `${width}px`;
+    slideIframe.style.height = `${height}px`;
+  }
+}
+
+async function loadEditorConfig() {
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    const w = cfg?.framePx?.width;
+    const h = cfg?.framePx?.height;
+    if (w && h) {
+      setSlideFrame(w, h);
+      applySlideFrameCss(w, h);
+    }
+    if (cfg?.slideMode && document?.body) {
+      document.body.dataset.slideMode = cfg.slideMode;
+    }
+  } catch {
+    // Defaults (960x540) stay in effect.
+  }
+}
+
 // Init
 async function init() {
   setStatus('Loading slide list...');
+
+  await loadEditorConfig();
 
   try {
     const res = await fetch('/api/slides');

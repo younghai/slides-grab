@@ -10,6 +10,7 @@ const INSTALLABLE_SKILLS = [
   'skills/slides-grab-plan/SKILL.md',
   'skills/slides-grab-design/SKILL.md',
   'skills/slides-grab-export/SKILL.md',
+  'skills/slides-grab-card-news/SKILL.md',
 ];
 
 test('installable skills use packaged commands and avoid .claude runtime paths', () => {
@@ -40,6 +41,7 @@ test('npm pack includes bundled skill references for installable skills', () => 
   assert.ok(filePaths.has('skills/slides-grab-export/references/html2pptx.md'));
   assert.ok(filePaths.has('skills/slides-grab-export/references/ooxml.md'));
   assert.ok(filePaths.has('skills/slides-grab/references/presentation-workflow-reference.md'));
+  assert.ok(filePaths.has('skills/slides-grab-card-news/SKILL.md'));
   assert.ok(filePaths.has('templates/design-styles/README.md'));
   assert.ok(filePaths.has('scripts/generate-image.js'));
   assert.ok(filePaths.has('src/pptx-raster-export.cjs'));
@@ -98,23 +100,25 @@ test('slides-grab help no longer exposes the legacy custom skill installer', () 
 
   assert.doesNotMatch(output, /\binstall-codex-skills\b/);
 });
-test('slides-grab design skill points at the bundled art-direction reference', () => {
+test('slides-grab design skill keeps the packaged style-discovery CLI guidance', () => {
   const text = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
 
   assert.match(text, /references\/beautiful-slide-defaults\.md/);
   assert.match(text, /visual thesis/i);
   assert.match(text, /content plan/i);
   assert.match(text, /slide litmus check/i);
-  assert.match(text, /list-styles/);
-  assert.match(text, /preview-styles/);
+  assert.match(text, /slides-grab list-styles/);
+  assert.match(text, /slides-grab preview-styles/);
   assert.match(text, /slides-grab image/i);
   assert.match(text, /Nano Banana Pro/i);
   assert.match(text, /GOOGLE_API_KEY|GEMINI_API_KEY/);
 });
 
-test('slides-grab design rules keep packaged image and video asset commands', () => {
+test('slides-grab design rules keep packaged style, image, and video asset commands', () => {
   const text = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
 
+  assert.match(text, /slides-grab list-styles/);
+  assert.match(text, /slides-grab preview-styles/);
   assert.match(text, /slides-grab image/i);
   assert.match(text, /slides-grab fetch-video/i);
   assert.match(text, /local videos and their poster thumbnails/i);
@@ -136,13 +140,14 @@ test('slides-grab workflow reference keeps packaged stage commands and image fal
   assert.match(text, /web search/i);
 });
 
-test('slides-grab orchestration skill keeps image and video workflows without duplicate rules', () => {
+test('slides-grab orchestration skill keeps packaged style/image/video workflows without duplicate rules', () => {
   const text = readFileSync('skills/slides-grab/SKILL.md', 'utf-8');
 
   assert.match(text, /slides-grab image/i);
   assert.match(text, /Nano Banana Pro/i);
   assert.match(text, /fetch-video|yt-dlp/i);
-  assert.match(text, /list-styles/);
+  assert.match(text, /slides-grab list-styles/);
+  assert.match(text, /slides-grab preview-styles/);
   assert.match(text, /local videos/i);
   assert.equal((text.match(/When a slide needs bespoke imagery/gi) || []).length, 1);
   assert.equal((text.match(/For complex diagrams/gi) || []).length, 1);
@@ -153,4 +158,34 @@ test('slides-grab design rules advertise both packaged image and video asset com
 
   assert.match(text, /slides-grab image --prompt/i);
   assert.match(text, /slides-grab fetch-video/i);
+});
+
+test('slides-grab packaged guidance prefers Lucide as the default icon library', () => {
+  const designSkill = readFileSync('skills/slides-grab-design/SKILL.md', 'utf-8');
+  const designRules = readFileSync('skills/slides-grab-design/references/design-rules.md', 'utf-8');
+  const detailedDesignRules = readFileSync('skills/slides-grab-design/references/detailed-design-rules.md', 'utf-8');
+  const exportReference = readFileSync('skills/slides-grab-export/references/html2pptx.md', 'utf-8');
+  const packageManifest = JSON.parse(readFileSync('package.json', 'utf-8'));
+
+  assert.match(designSkill, /Lucide/i);
+  assert.match(designSkill, /prefer Lucide/i);
+  assert.match(designRules, /Lucide/i);
+  assert.match(designRules, /avoid emoji as the default/i);
+  assert.match(detailedDesignRules, /Prefer Lucide as the default icon library/i);
+  assert.match(detailedDesignRules, /Do not default to emoji/i);
+  assert.match(exportReference, /lucide-react/);
+  assert.doesNotMatch(exportReference, /react-icons/);
+  assert.match(packageManifest.dependencies['lucide-react'], /^\^?\d+\.\d+\.\d+$/);
+  assert.equal(packageManifest.dependencies['react-icons'], undefined);
+});
+
+
+test('slides-grab card-news skill documents square Instagram workflow via packaged commands', () => {
+  const text = readFileSync('skills/slides-grab-card-news/SKILL.md', 'utf-8');
+
+  assert.match(text, /Instagram/i);
+  assert.match(text, /card-news/i);
+  assert.match(text, /--mode card-news|--slide-mode card-news/);
+  assert.match(text, /slides-grab validate/i);
+  assert.match(text, /slides-grab build-viewer/i);
 });

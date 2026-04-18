@@ -1,8 +1,8 @@
 ---
 name: slides-grab
-description: End-to-end presentation workflow for Codex. Use when making a full presentation from scratch — planning, designing slides, editing, and exporting. PDF is preferred; PPTX/Figma export is experimental / unstable.
+description: End-to-end presentation workflow for Codex. Use when making a full presentation from scratch — planning, designing slides, editing, and exporting. PDF and per-slide PNG are preferred; PPTX/Figma export is experimental / unstable.
 metadata:
-  short-description: Full pipeline from topic to PDF + experimental / unstable PPTX/Figma export
+  short-description: Full pipeline from topic to PDF/PNG + experimental / unstable PPTX/Figma export
 ---
 
 # slides-grab Skill (Codex) - Full Workflow Orchestrator
@@ -48,9 +48,13 @@ Use the installed **slides-grab-design** skill.
 Use the installed **slides-grab-export** skill.
 
 1. Confirm user wants conversion.
-2. Export to PPTX: `slides-grab convert --slides-dir <path> --output <name>.pptx` (**experimental / unstable**)
-3. Export to PDF (if requested): `slides-grab pdf --slides-dir <path> --output <name>.pdf`
-4. Report results.
+2. Pick the primary target:
+   - Card-news / Instagram-style decks → `slides-grab png --slides-dir <path> --slide-mode card-news --resolution 2160p` (see `slides-grab-card-news`).
+   - Widescreen decks → `slides-grab pdf --slides-dir <path> --output <name>.pdf`.
+3. Per-slide PNG (any mode): `slides-grab png --slides-dir <path> --output-dir <path>/out-png --resolution 2160p`.
+4. PPTX (optional, **experimental / unstable**): `slides-grab convert --slides-dir <path> --output <name>.pptx`.
+5. Figma-importable PPTX (optional, **experimental / unstable**): `slides-grab figma --slides-dir <path> --output <name>-figma.pptx`.
+6. Report results.
 
 ---
 

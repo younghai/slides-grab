@@ -2,6 +2,7 @@
 
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 
 import {
@@ -19,6 +20,9 @@ import {
   scanSlides,
   selectSlideFiles,
 } from '../src/validation/core.js';
+
+const require = createRequire(import.meta.url);
+const { DEFAULT_SLIDE_MODE } = require('../src/slide-mode.cjs');
 
 export {
   DEFAULT_SLIDES_DIR,
@@ -160,7 +164,7 @@ function peekValidateFormat(args = []) {
   return DEFAULT_VALIDATE_FORMAT;
 }
 
-export async function validateSlides(slidesDir, { selectedSlides = [] } = {}) {
+export async function validateSlides(slidesDir, { mode = DEFAULT_SLIDE_MODE, selectedSlides = [] } = {}) {
   const slideFiles = selectSlideFiles(await findSlideFiles(slidesDir), selectedSlides, slidesDir);
   if (slideFiles.length === 0) {
     throw new Error(`No slide-*.html files found in: ${slidesDir}`);
@@ -171,11 +175,24 @@ export async function validateSlides(slidesDir, { selectedSlides = [] } = {}) {
   const page = await context.newPage();
 
   try {
-    const slides = await scanSlides(page, slidesDir, slideFiles);
-    return createValidationResult(slides);
+    const slides = await scanSlides(page, slidesDir, slideFiles, mode);
+    return createValidationResult(slides, mode);
   } finally {
     await browser.close();
   }
+}
+
+function peekValidateMode(args = []) {
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === '--mode') {
+      return args[i + 1] || DEFAULT_SLIDE_MODE;
+    }
+    if (arg.startsWith('--mode=')) {
+      return arg.slice('--mode='.length) || DEFAULT_SLIDE_MODE;
+    }
+  }
+  return DEFAULT_SLIDE_MODE;
 }
 
 export async function main(args = process.argv.slice(2)) {
@@ -186,7 +203,7 @@ export async function main(args = process.argv.slice(2)) {
   }
 
   const slidesDir = resolve(process.cwd(), options.slidesDir);
-  const result = await validateSlides(slidesDir, { selectedSlides: options.slides });
+  const result = await validateSlides(slidesDir, { mode: options.mode, selectedSlides: options.slides });
   process.stdout.write(formatValidationResult(result, options.format));
   if (result.summary.failedSlides > 0) {
     process.exitCode = 1;
@@ -197,7 +214,7 @@ const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(imp
 
 if (isMain) {
   main().catch((error) => {
-    const failure = createValidationFailure(error);
+    const failure = createValidationFailure(error, peekValidateMode(process.argv.slice(2)));
     process.stdout.write(formatValidationResult(failure, peekValidateFormat(process.argv.slice(2))));
     process.exit(1);
   });

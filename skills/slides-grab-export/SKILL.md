@@ -1,6 +1,6 @@
 ---
 name: slides-grab-export
-description: Stage 3 conversion skill for Codex. Convert approved HTML slides to PDF and to experimental / unstable PPTX/Figma outputs, then validate artifacts.
+description: Stage 3 conversion skill for Codex. Convert approved HTML slides to PDF or per-slide PNG reliably, and to experimental / unstable PPTX/Figma outputs on a best-effort basis.
 metadata:
   short-description: Convert slides and run conversion checks
 ---
@@ -10,24 +10,31 @@ metadata:
 Use this only after the user approves design output.
 
 ## Goal
-Convert reviewed slide HTML into PDF reliably, and into experimental / unstable PPTX/Figma outputs on a best-effort basis.
+Convert reviewed slide HTML into PDF or per-slide PNG reliably, and into experimental / unstable PPTX/Figma outputs on a best-effort basis.
 
 ## Inputs
 - Approved `<slides-dir>/slide-*.html`
 - Optional output path settings
 
 ## Outputs
-- Presentation artifact (`.pptx` or `.pdf`)
+- Presentation artifact (`.pdf`, `.png` per slide, or `.pptx`)
 
 ## Workflow
 1. Confirm user approval for conversion.
-2. Run conversion command:
-   - `slides-grab convert --slides-dir <path> --output <name>.pptx` (**experimental / unstable**)
-3. If requested, run PDF conversion:
+2. Pick the right primary target:
+   - Card-news / Instagram-style decks → `slides-grab png --slides-dir <path> --slide-mode card-news --resolution 2160p` (see `slides-grab-card-news`).
+   - Widescreen slide decks → `slides-grab pdf --slides-dir <path> --output <name>.pdf`.
+3. When per-slide raster output is needed (card news, social posts, thumbnails):
+   - `slides-grab png --slides-dir <path> --output-dir <path>/out-png --resolution 2160p`
+   - Add `--slide-mode card-news` for 1:1 cards.
+4. If the user also wants a PDF deck:
    - `slides-grab pdf --slides-dir <path> --output <name>.pdf`
-4. If requested, run Figma export:
+   - Add `--slide-mode card-news` when the deck is square.
+5. If the user wants PPTX (experimental / unstable):
+   - `slides-grab convert --slides-dir <path> --output <name>.pptx`
+6. If the user wants Figma-importable PPTX (experimental / unstable):
    - `slides-grab figma --slides-dir <path> --output <name>-figma.pptx`
-5. Report success/failure with actionable errors.
+7. Report success/failure with actionable errors.
 
 ## Rules
 - Do not modify slide content during conversion stage unless explicitly requested.

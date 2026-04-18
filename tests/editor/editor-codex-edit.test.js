@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -14,6 +15,17 @@ import {
   DEFAULT_EDIT_TIMEOUT_MS,
   parseEditTimeoutMs,
 } from '../../src/editor/edit-subprocess.js';
+
+const DETAILED_DESIGN_RULES_URL = new URL(
+  '../../skills/slides-grab-design/references/detailed-design-rules.md',
+  import.meta.url,
+);
+
+async function importFreshCodexEditModule() {
+  const moduleUrl = new URL('../../src/editor/codex-edit.js', import.meta.url);
+  moduleUrl.searchParams.set('t', `${Date.now()}-${Math.random()}`);
+  return import(moduleUrl.href);
+}
 
 test('normalizeSelection rounds values and clamps to slide bounds', () => {
   const selection = normalizeSelection(
@@ -80,7 +92,9 @@ test('buildCodexEditPrompt includes user prompt, bbox, and XPath targets', () =>
   assert.match(prompt, /Region 1/);
   assert.match(prompt, /Slide edit rules \(follow strictly\):/);
   assert.match(prompt, /primary objective/i);
-  assert.match(prompt, /Keep slide size 720pt x 405pt\./);
+  assert.match(prompt, /Keep slide size appropriate for the current mode/);
+  assert.match(prompt, /Prefer Lucide as the default icon library/i);
+  assert.match(prompt, /Do not default to emoji/i);
   assert.match(prompt, /slides-grab image/i);
   assert.match(prompt, /GOOGLE_API_KEY|GEMINI_API_KEY/);
   assert.match(prompt, /Edit only the requested slide HTML file among slide-\*\.html files\./);
@@ -148,12 +162,44 @@ test('getPptDesignSkillPrompt loads bundled ppt design skill guidance', () => {
   assert.match(skillPrompt, /Nano Banana Pro/i);
 });
 
+test('getDetailedDesignSkillPrompt falls back when packaged icon guidance section is missing', async () => {
+  const originalMarkdown = readFileSync(DETAILED_DESIGN_RULES_URL, 'utf8');
+  const missingIconSection = originalMarkdown.replace(
+    /\n## Icon Usage Rules[\s\S]*?(?=\n## Workflow \(Stage 2: Design \+ Human Review\))/,
+    '\n',
+  );
+
+  assert.notEqual(missingIconSection, originalMarkdown);
+
+  writeFileSync(DETAILED_DESIGN_RULES_URL, missingIconSection);
+
+  try {
+    const { getDetailedDesignSkillPrompt: getFreshDetailedDesignSkillPrompt } = await importFreshCodexEditModule();
+    const detailedPrompt = getFreshDetailedDesignSkillPrompt();
+
+    assert.match(detailedPrompt, /## Icon Usage Rules/);
+    assert.match(detailedPrompt, /Prefer Lucide as the default icon library/i);
+    assert.match(detailedPrompt, /Do not default to emoji/i);
+    assert.match(detailedPrompt, /slides-grab validate --slides-dir <path>/i);
+    assert.match(detailedPrompt, /slides-grab build-viewer --slides-dir <path>/i);
+    assert.ok(
+      detailedPrompt.indexOf('slides-grab validate --slides-dir <path>')
+      < detailedPrompt.indexOf('slides-grab build-viewer --slides-dir <path>'),
+    );
+  } finally {
+    writeFileSync(DETAILED_DESIGN_RULES_URL, originalMarkdown);
+  }
+});
+
 test('getDetailedDesignSkillPrompt loads only relevant detailed design sections', () => {
   const detailedPrompt = getDetailedDesignSkillPrompt();
 
   assert.match(detailedPrompt, /## Base Settings/);
   assert.match(detailedPrompt, /### 4\. Image Usage Rules/);
   assert.match(detailedPrompt, /## Text Usage Rules/);
+  assert.match(detailedPrompt, /## Icon Usage Rules/);
+  assert.match(detailedPrompt, /Prefer Lucide as the default icon library/i);
+  assert.match(detailedPrompt, /Do not default to emoji/i);
   assert.match(detailedPrompt, /## Workflow \(Stage 2: Design \+ Human Review\)/);
   assert.match(detailedPrompt, /## Important Notes/);
   assert.match(detailedPrompt, /## Beautiful Defaults for Slides/);
@@ -163,7 +209,6 @@ test('getDetailedDesignSkillPrompt loads only relevant detailed design sections'
   assert.match(detailedPrompt, /Would this still feel premium without shadows, cards, or extra chrome\?/i);
   assert.match(detailedPrompt, /local videos/i);
   assert.match(detailedPrompt, /fetch-video|yt-dlp/i);
-  assert.match(detailedPrompt, /Nano Banana API fails|Nano Banana is down/i);
   assert.match(detailedPrompt, /Nano Banana API fails|Nano Banana is down/i);
   assert.doesNotMatch(detailedPrompt, /## Core Design Philosophy/);
   assert.doesNotMatch(detailedPrompt, /### 1\. Chart\.js/);
@@ -183,4 +228,17 @@ test('buildEditTimeoutMessage describes terminated editor runs', () => {
     buildEditTimeoutMessage({ engineLabel: 'Codex', timeoutMs: 200 }),
     'Codex edit timed out after 200ms and was terminated.',
   );
+});
+
+
+test('buildCodexEditPrompt switches sizing guidance for card-news mode', () => {
+  const prompt = buildCodexEditPrompt({
+    slideFile: 'slide-03.html',
+    userPrompt: 'Tighten this card-news cover.',
+    slideMode: 'card-news',
+    selections: [{ bbox: { x: 40, y: 48, width: 320, height: 320 }, targets: [] }],
+  });
+
+  assert.match(prompt, /Selected regions on slide \(960x960 coordinate space\):/);
+  assert.match(prompt, /Keep slide dimensions at 720pt x 720pt\./);
 });

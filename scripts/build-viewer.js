@@ -9,10 +9,19 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'node:module';
 import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 import { buildSlideRuntimeHtml } from '../src/image-contract.js';
+
+const require = createRequire(import.meta.url);
+const {
+  DEFAULT_SLIDE_MODE,
+  getSlideModeChoices,
+  getSlideModeConfig,
+  normalizeSlideMode,
+} = require('../src/slide-mode.cjs');
 
 const DEFAULT_SLIDES_DIR = 'slides';
 
@@ -23,6 +32,7 @@ function printUsage() {
       '',
       'Options:',
       `  --slides-dir <path>  Slide directory (default: ${DEFAULT_SLIDES_DIR})`,
+      `  --mode <mode>       Slide mode: ${getSlideModeChoices().join(', ')} (default: ${DEFAULT_SLIDE_MODE})`,
       '  -h, --help           Show this help message',
     ].join('\n'),
   );
@@ -40,6 +50,7 @@ function readOptionValue(args, index, optionName) {
 export function parseCliArgs(args) {
   const options = {
     slidesDir: DEFAULT_SLIDES_DIR,
+    mode: DEFAULT_SLIDE_MODE,
     help: false,
   };
 
@@ -62,6 +73,17 @@ export function parseCliArgs(args) {
       continue;
     }
 
+    if (arg === '--mode') {
+      options.mode = normalizeSlideMode(readOptionValue(args, i, '--mode'));
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--mode=')) {
+      options.mode = normalizeSlideMode(arg.slice('--mode='.length));
+      continue;
+    }
+
     throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -70,17 +92,28 @@ export function parseCliArgs(args) {
   }
 
   options.slidesDir = options.slidesDir.trim();
+  options.mode = normalizeSlideMode(options.mode);
   return options;
+}
+
+function toSlideOrder(fileName) {
+  const match = fileName.match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : Number.POSITIVE_INFINITY;
+}
+
+function sortSlideFiles(a, b) {
+  const orderA = toSlideOrder(a);
+  const orderB = toSlideOrder(b);
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+  return a.localeCompare(b);
 }
 
 export function findSlideFiles(slidesDir) {
   return readdirSync(slidesDir)
-    .filter((file) => /^slide-\d+\.html$/i.test(file))
-    .sort((a, b) => {
-      const numA = parseInt(a.match(/\d+/)[0], 10);
-      const numB = parseInt(b.match(/\d+/)[0], 10);
-      return numA - numB || a.localeCompare(b);
-    });
+    .filter((file) => /^slide-.*\.html$/i.test(file))
+    .sort(sortSlideFiles);
 }
 
 /**
@@ -106,7 +139,9 @@ export function loadSlides(slidesDir) {
   });
 }
 
-export function buildViewerHtml(slides) {
+export function buildViewerHtml(slides, { slideMode = DEFAULT_SLIDE_MODE } = {}) {
+  const { framePt } = getSlideModeConfig(slideMode);
+
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -131,7 +166,6 @@ export function buildViewerHtml(slides) {
       flex-direction: column;
     }
 
-    /* Navigation bar */
     .nav-bar {
       height: 48px;
       background: #1a1a1a;
@@ -182,7 +216,6 @@ export function buildViewerHtml(slides) {
       padding: 6px 10px !important;
     }
 
-    /* Slide viewport */
     .slide-viewport {
       flex: 1;
       display: flex;
@@ -193,18 +226,17 @@ export function buildViewerHtml(slides) {
     }
 
     .slide-scaler {
-      width: 720pt;
-      height: 405pt;
+      width: ${framePt.width}pt;
+      height: ${framePt.height}pt;
       position: relative;
       transform-origin: center center;
     }
 
-    /* Slide frames (iframes) */
     .slide-frame {
       position: absolute;
       inset: 0;
-      width: 720pt;
-      height: 405pt;
+      width: ${framePt.width}pt;
+      height: ${framePt.height}pt;
       border: none;
       overflow: hidden;
       opacity: 0;
@@ -220,7 +252,6 @@ export function buildViewerHtml(slides) {
 </head>
 <body>
   <div class="viewer-container">
-    <!-- Navigation -->
     <div class="nav-bar">
       <button id="btn-prev" title="Previous (\\u2190)">Prev</button>
       <span class="slide-counter" id="counter">1 / ${slides.length}</span>
@@ -228,7 +259,6 @@ export function buildViewerHtml(slides) {
       <button class="btn-fullscreen" id="btn-fs" title="Fullscreen (F)">&#x26F6;</button>
     </div>
 
-    <!-- Slide viewport -->
     <div class="slide-viewport" id="viewport">
       <div class="slide-scaler" id="scaler">
 ${slides.map((s, i) => `        <iframe class="slide-frame${i === 0 ? ' active' : ''}" data-slide="${i + 1}" srcdoc="${escapeForSrcdoc(s.html)}" sandbox="allow-same-origin"></iframe>`).join('\n')}
@@ -265,7 +295,6 @@ ${slides.map((s, i) => `        <iframe class="slide-frame${i === 0 ? ' active' 
     btnNext.addEventListener('click', next);
     btnPrev.disabled = true;
 
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
@@ -277,7 +306,6 @@ ${slides.map((s, i) => `        <iframe class="slide-frame${i === 0 ? ' active' 
       }
     });
 
-    // Fullscreen
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -287,7 +315,6 @@ ${slides.map((s, i) => `        <iframe class="slide-frame${i === 0 ? ' active' 
     }
     document.getElementById('btn-fs').addEventListener('click', toggleFullscreen);
 
-    // Auto-scale to fit viewport (95% fit)
     function rescale() {
       const vw = viewport.clientWidth;
       const vh = viewport.clientHeight;
@@ -332,7 +359,7 @@ export function main(args = process.argv.slice(2)) {
   }
 
   console.log(`Found ${slides.length} slides`);
-  writeFileSync(output, buildViewerHtml(slides), 'utf-8');
+  writeFileSync(output, buildViewerHtml(slides, { slideMode: options.mode }), 'utf-8');
   console.log(`Built viewer: ${output}`);
   return { slidesDir, output, slides };
 }

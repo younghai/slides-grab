@@ -84,7 +84,7 @@ Every HTML slide must include proper body dimensions:
 - **CRITICAL: Never use CSS gradients (`linear-gradient`, `radial-gradient`)** - They don't convert to PowerPoint
 - **ALWAYS create gradient/icon PNGs FIRST using Sharp, then reference in HTML**
 - For gradients: Rasterize SVG to PNG background images
-- For icons: Rasterize react-icons SVG to PNG images
+- For icons: Rasterize Lucide SVG to PNG images
 - All visual effects must be pre-rendered as raster images before HTML rendering
 
 **Rasterizing Icons with Sharp:**
@@ -93,11 +93,11 @@ Every HTML slide must include proper body dimensions:
 const React = require('react');
 const ReactDOMServer = require('react-dom/server');
 const sharp = require('sharp');
-const { FaHome } = require('react-icons/fa');
+const { House } = require('lucide-react');
 
 async function rasterizeIconPng(IconComponent, color, size = "256", filename) {
   const svgString = ReactDOMServer.renderToStaticMarkup(
-    React.createElement(IconComponent, { color: `#${color}`, size: size })
+    React.createElement(IconComponent, { color: `#${color}`, size: size, strokeWidth: 1.75 })
   );
 
   // Convert SVG to PNG using Sharp
@@ -109,7 +109,7 @@ async function rasterizeIconPng(IconComponent, color, size = "256", filename) {
 }
 
 // Usage: Rasterize icon before using in HTML
-const iconPath = await rasterizeIconPng(FaHome, "4472c4", "256", "home-icon.png");
+const iconPath = await rasterizeIconPng(House, "4472c4", "256", "home-icon.png");
 // Then reference in HTML: <img src="home-icon.png" style="width: 40pt; height: 40pt;">
 ```
 
