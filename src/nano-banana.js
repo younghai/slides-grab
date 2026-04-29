@@ -2,11 +2,46 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { extname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import { getSlidesDir } from './resolve.js';
+import {
+  GOD_TIBO_DEFAULT_MODEL,
+  GOD_TIBO_PROVIDER_AUTO,
+  generateGodTiboImage,
+  getGodTiboFallbackMessage,
+} from './god-tibo-imagen.js';
 
+export const IMAGE_PROVIDER_GOD_TIBO = 'god-tibo';
+export const IMAGE_PROVIDER_CODEX = 'codex';
+export const IMAGE_PROVIDER_NANO_BANANA = 'nano-banana';
+export const DEFAULT_IMAGE_PROVIDER = IMAGE_PROVIDER_GOD_TIBO;
+export const DEFAULT_GOD_TIBO_MODEL = GOD_TIBO_DEFAULT_MODEL;
+export const DEFAULT_CODEX_IMAGE_MODEL = 'gpt-image-2';
+export const DEFAULT_CODEX_IMAGE_SIZE = 'auto';
 export const DEFAULT_NANO_BANANA_MODEL = 'gemini-3-pro-image-preview';
 export const DEFAULT_NANO_BANANA_ASPECT_RATIO = '16:9';
 export const DEFAULT_NANO_BANANA_IMAGE_SIZE = '4K';
 const VALID_IMAGE_SIZES = new Set(['2K', '4K']);
+
+const PROVIDER_ALIASES = new Map([
+  ['god-tibo', IMAGE_PROVIDER_GOD_TIBO],
+  ['godtibo', IMAGE_PROVIDER_GOD_TIBO],
+  ['codex-cli', IMAGE_PROVIDER_GOD_TIBO],
+  ['codex', IMAGE_PROVIDER_CODEX],
+  ['openai', IMAGE_PROVIDER_CODEX],
+  ['nano-banana', IMAGE_PROVIDER_NANO_BANANA],
+  ['gemini', IMAGE_PROVIDER_NANO_BANANA],
+]);
+
+const VALID_PROVIDERS = new Set([
+  IMAGE_PROVIDER_GOD_TIBO,
+  IMAGE_PROVIDER_CODEX,
+  IMAGE_PROVIDER_NANO_BANANA,
+]);
+
+export function normalizeImageProvider(value) {
+  const trimmed = String(value || '').trim().toLowerCase();
+  if (!trimmed) return '';
+  return PROVIDER_ALIASES.get(trimmed) || trimmed;
+}
 
 const MIME_TYPE_TO_EXTENSION = new Map([
   ['image/png', '.png'],
@@ -26,20 +61,28 @@ export function getNanoBananaUsage() {
   return [
     'Usage: slides-grab image --prompt <text> [options]',
     '',
-    'Generate a deck-local image asset with Nano Banana Pro and save it into <slides-dir>/assets/.',
+    'Generate a deck-local image asset and save it into <slides-dir>/assets/.',
+    'Default provider: god-tibo-imagen (uses your local Codex ChatGPT login — no OpenAI/Google API key required).',
     '',
     'Options:',
     '  --prompt <text>         Required text prompt for image generation',
     '  --slides-dir <path>     Slides directory (default: slides)',
     '  --output <path>         Optional explicit output path inside <slides-dir>/assets/',
     '  --name <slug>           Optional asset basename without extension',
-    `  --model <id>            Model id (default: ${DEFAULT_NANO_BANANA_MODEL})`,
-    `  --aspect-ratio <ratio>  Image aspect ratio (default: ${DEFAULT_NANO_BANANA_ASPECT_RATIO})`,
-    `  --image-size <size>     Image size preset: 2K or 4K (default: ${DEFAULT_NANO_BANANA_IMAGE_SIZE})`,
+    `  --provider <name>       Image provider: god-tibo (default), codex (OpenAI), or nano-banana.`,
+    '                          Aliases: codex-cli → god-tibo, openai → codex, gemini → nano-banana.',
+    `  --model <id>            Model id (default: ${DEFAULT_GOD_TIBO_MODEL} for god-tibo, ${DEFAULT_CODEX_IMAGE_MODEL} for codex, ${DEFAULT_NANO_BANANA_MODEL} for nano-banana)`,
+    `  --aspect-ratio <ratio>  Image aspect ratio; for god-tibo it is injected as a prompt hint, for codex it maps to the nearest supported OpenAI size (default: ${DEFAULT_NANO_BANANA_ASPECT_RATIO})`,
+    `  --image-size <size>     Nano Banana image size preset: 2K or 4K (default: ${DEFAULT_NANO_BANANA_IMAGE_SIZE})`,
     '  -h, --help              Show this help text',
     '',
     'Auth:',
-    '  Set GOOGLE_API_KEY or GEMINI_API_KEY before running this command.',
+    '  Default (god-tibo): run `codex login` once to populate ~/.codex/auth.json. No OpenAI/Google API key required;',
+    '                      requires a Codex/ChatGPT account entitled to image generation.',
+    '  Codex/OpenAI provider: set OPENAI_API_KEY.',
+    '  Nano Banana provider: set GOOGLE_API_KEY or GEMINI_API_KEY.',
+    '',
+    'WARNING: god-tibo-imagen calls an unsupported private Codex backend that may break without notice.',
   ].join('\n');
 }
 
@@ -49,7 +92,8 @@ export function parseNanoBananaCliArgs(argv) {
     slidesDir: 'slides',
     output: '',
     name: '',
-    model: DEFAULT_NANO_BANANA_MODEL,
+    provider: DEFAULT_IMAGE_PROVIDER,
+    model: '',
     aspectRatio: DEFAULT_NANO_BANANA_ASPECT_RATIO,
     imageSize: DEFAULT_NANO_BANANA_IMAGE_SIZE,
     help: false,
@@ -102,6 +146,16 @@ export function parseNanoBananaCliArgs(argv) {
     }
     if (arg.startsWith('--name=')) {
       parsed.name = arg.slice('--name='.length);
+      continue;
+    }
+
+    if (arg === '--provider') {
+      parsed.provider = readOptionValue(args, i, '--provider');
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith('--provider=')) {
+      parsed.provider = arg.slice('--provider='.length);
       continue;
     }
 
@@ -162,10 +216,28 @@ export function parseNanoBananaCliArgs(argv) {
   }
   parsed.name = parsed.name.trim();
 
-  if (typeof parsed.model !== 'string' || parsed.model.trim() === '') {
-    throw new Error('--model must be a non-empty string.');
+  if (typeof parsed.provider !== 'string' || parsed.provider.trim() === '') {
+    throw new Error('--provider must be a non-empty string.');
   }
-  parsed.model = parsed.model.trim();
+  parsed.provider = normalizeImageProvider(parsed.provider);
+  if (!VALID_PROVIDERS.has(parsed.provider)) {
+    throw new Error(`Unknown --provider value: ${parsed.provider}. Expected god-tibo, codex, or nano-banana.`);
+  }
+
+  if (typeof parsed.model !== 'string') {
+    throw new Error('--model must be a string.');
+  }
+  if (!parsed.model.trim()) {
+    if (parsed.provider === IMAGE_PROVIDER_GOD_TIBO) {
+      parsed.model = DEFAULT_GOD_TIBO_MODEL;
+    } else if (parsed.provider === IMAGE_PROVIDER_NANO_BANANA) {
+      parsed.model = DEFAULT_NANO_BANANA_MODEL;
+    } else {
+      parsed.model = DEFAULT_CODEX_IMAGE_MODEL;
+    }
+  } else {
+    parsed.model = parsed.model.trim();
+  }
 
   if (typeof parsed.aspectRatio !== 'string' || parsed.aspectRatio.trim() === '') {
     throw new Error('--aspect-ratio must be a non-empty string.');
@@ -177,6 +249,15 @@ export function parseNanoBananaCliArgs(argv) {
   }
 
   return parsed;
+}
+
+export function resolveCodexApiKey(env = process.env) {
+  const openAiApiKey = typeof env?.OPENAI_API_KEY === 'string' ? env.OPENAI_API_KEY.trim() : '';
+  if (openAiApiKey) {
+    return { apiKey: openAiApiKey, source: 'OPENAI_API_KEY' };
+  }
+
+  return { apiKey: '', source: '' };
 }
 
 export function resolveNanoBananaApiKey(env = process.env) {
@@ -195,7 +276,61 @@ export function resolveNanoBananaApiKey(env = process.env) {
 
 export function getNanoBananaFallbackMessage(reason) {
   const summary = typeof reason === 'string' && reason.trim() ? reason.trim() : 'Nano Banana image generation failed.';
-  return `${summary} Ask the user to provide GOOGLE_API_KEY (or GEMINI_API_KEY), or fall back to web search + download the chosen image into ./assets/<file>.`;
+  return `${summary} Nano Banana is the fallback provider: set GOOGLE_API_KEY (or GEMINI_API_KEY), or fall back to web search + download the chosen image into ./assets/<file>.`;
+}
+
+export function getCodexFallbackMessage(reason) {
+  const summary = typeof reason === 'string' && reason.trim() ? reason.trim() : 'Codex image generation failed.';
+  return `${summary} The Codex/OpenAI provider requires OPENAI_API_KEY. Nano Banana remains available as a fallback with GOOGLE_API_KEY or GEMINI_API_KEY. If image generation credentials are unavailable, use web search and download the chosen image into ./assets/<file>.`;
+}
+
+function parseAspectRatioOrientation(aspectRatio) {
+  const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(String(aspectRatio || '').trim());
+  if (!match) {
+    return 'landscape';
+  }
+
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return 'landscape';
+  }
+
+  if (Math.abs(width - height) < Number.EPSILON) {
+    return 'square';
+  }
+  return width > height ? 'landscape' : 'portrait';
+}
+
+export function resolveCodexImageSize({
+  aspectRatio = DEFAULT_NANO_BANANA_ASPECT_RATIO,
+  size = DEFAULT_CODEX_IMAGE_SIZE,
+} = {}) {
+  if (size && size !== 'auto') {
+    return size;
+  }
+
+  const orientation = parseAspectRatioOrientation(aspectRatio);
+  if (orientation === 'square') {
+    return '1024x1024';
+  }
+  if (orientation === 'portrait') {
+    return '1024x1536';
+  }
+  return '1536x1024';
+}
+
+export function buildCodexImageApiRequest({
+  prompt,
+  model = DEFAULT_CODEX_IMAGE_MODEL,
+  aspectRatio = DEFAULT_NANO_BANANA_ASPECT_RATIO,
+  size = DEFAULT_CODEX_IMAGE_SIZE,
+}) {
+  return {
+    model,
+    prompt,
+    size: resolveCodexImageSize({ aspectRatio, size }),
+  };
 }
 
 export function buildNanoBananaApiRequest({ prompt, aspectRatio, imageSize }) {
@@ -223,12 +358,20 @@ function sanitizeAssetName(value) {
     .slice(0, 80);
 }
 
-function pickAssetBaseName({ prompt, name }) {
+function pickAssetBaseName({ prompt, name, provider = IMAGE_PROVIDER_NANO_BANANA }) {
   const preferred = sanitizeAssetName(name || '');
   if (preferred) return preferred;
 
   const fromPrompt = sanitizeAssetName(prompt);
-  return fromPrompt ? `nano-banana-${fromPrompt}` : 'nano-banana-generated-image';
+  let prefix;
+  if (provider === IMAGE_PROVIDER_GOD_TIBO) {
+    prefix = 'god-tibo';
+  } else if (provider === IMAGE_PROVIDER_CODEX) {
+    prefix = 'codex';
+  } else {
+    prefix = 'nano-banana';
+  }
+  return fromPrompt ? `${prefix}-${fromPrompt}` : `${prefix}-generated-image`;
 }
 
 function getExtensionFromMimeType(mimeType) {
@@ -272,6 +415,7 @@ export function resolveNanoBananaOutputPath({
   output = '',
   name = '',
   mimeType = 'image/png',
+  provider = IMAGE_PROVIDER_NANO_BANANA,
 }) {
   const absoluteSlidesDir = resolve(slidesDir);
   const assetsDir = join(absoluteSlidesDir, 'assets');
@@ -285,7 +429,7 @@ export function resolveNanoBananaOutputPath({
     }
     outputPath = extname(requestedPath) ? requestedPath : `${requestedPath}${extension}`;
   } else {
-    outputPath = join(assetsDir, `${pickAssetBaseName({ prompt, name })}${extension}`);
+    outputPath = join(assetsDir, `${pickAssetBaseName({ prompt, name, provider })}${extension}`);
   }
 
   if (!ensureInsideDirectory(outputPath, assetsDir)) {
@@ -297,6 +441,20 @@ export function resolveNanoBananaOutputPath({
     outputPath,
     relativeRef: `./assets/${relative(assetsDir, outputPath).replace(/\\/g, '/')}`,
   };
+}
+
+export function extractCodexGeneratedImage(payload) {
+  const images = Array.isArray(payload?.data) ? payload.data : [];
+  for (const image of images) {
+    if (typeof image?.b64_json === 'string' && image.b64_json.trim()) {
+      return {
+        mimeType: 'image/png',
+        bytes: Buffer.from(image.b64_json, 'base64'),
+      };
+    }
+  }
+
+  throw new Error('Codex image generation response did not include an image payload.');
 }
 
 export function extractGeneratedImage(payload) {
@@ -318,6 +476,8 @@ export function extractGeneratedImage(payload) {
   throw new Error('Nano Banana API response did not include an image payload.');
 }
 
+const CODEX_IMAGE_ENDPOINT = 'https://api.openai.com/v1/images/generations';
+
 function buildNanoBananaEndpoint(model) {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
@@ -328,6 +488,35 @@ function getApiErrorMessage(payload, status) {
     return message.trim();
   }
   return `HTTP ${status}`;
+}
+
+export async function generateCodexImage({
+  prompt,
+  apiKey,
+  model = DEFAULT_CODEX_IMAGE_MODEL,
+  aspectRatio = DEFAULT_NANO_BANANA_ASPECT_RATIO,
+  size = DEFAULT_CODEX_IMAGE_SIZE,
+  fetchImpl = globalThis.fetch,
+}) {
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('Global fetch is unavailable in this runtime.');
+  }
+
+  const response = await fetchImpl(CODEX_IMAGE_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(buildCodexImageApiRequest({ prompt, model, aspectRatio, size })),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(`Codex image generation request failed: ${getApiErrorMessage(payload, response.status)}.`);
+  }
+
+  return extractCodexGeneratedImage(payload);
 }
 
 export async function generateNanoBananaImage({
@@ -363,6 +552,48 @@ export async function generateNanoBananaImage({
   }
 }
 
+function argvIncludesOption(argv, optionName) {
+  const args = Array.isArray(argv) ? argv : [];
+  return args.some((arg) => arg === optionName || String(arg).startsWith(`${optionName}=`));
+}
+
+async function generateNanoBananaFallbackImage({ options, apiKey, fetchImpl }) {
+  return generateNanoBananaImage({
+    prompt: options.prompt,
+    apiKey,
+    model: DEFAULT_NANO_BANANA_MODEL,
+    aspectRatio: options.aspectRatio,
+    imageSize: options.imageSize,
+    fetchImpl,
+  });
+}
+
+async function generateGodTiboFallbackImage({ options, generateGodTiboImageImpl }) {
+  return generateGodTiboImageImpl({
+    prompt: options.prompt,
+    model: options.model && options.model.trim() ? options.model : DEFAULT_GOD_TIBO_MODEL,
+    aspectRatio: options.aspectRatio,
+    providerMode: GOD_TIBO_PROVIDER_AUTO,
+  });
+}
+
+async function generateCodexFallbackImage({ options, apiKey, fetchImpl, requestedNanoBananaImageSize }) {
+  if (requestedNanoBananaImageSize) {
+    throw new Error(
+      '--image-size is only supported by the Nano Banana provider; Codex/OpenAI maps --aspect-ratio to the nearest supported OpenAI image size. Use --provider nano-banana for 2K or 4K presets.',
+    );
+  }
+  return generateCodexImage({
+    prompt: options.prompt,
+    apiKey,
+    model: options.model && options.model.trim() && options.model !== DEFAULT_GOD_TIBO_MODEL
+      ? options.model
+      : DEFAULT_CODEX_IMAGE_MODEL,
+    aspectRatio: options.aspectRatio,
+    fetchImpl,
+  });
+}
+
 export async function saveNanoBananaImage({
   prompt,
   slidesDir,
@@ -370,8 +601,9 @@ export async function saveNanoBananaImage({
   name = '',
   mimeType,
   bytes,
+  provider = IMAGE_PROVIDER_NANO_BANANA,
 }) {
-  const target = resolveNanoBananaOutputPath({ slidesDir, prompt, output, name, mimeType });
+  const target = resolveNanoBananaOutputPath({ slidesDir, prompt, output, name, mimeType, provider });
   await mkdir(target.assetsDir, { recursive: true });
   await writeFile(target.outputPath, bytes);
   return target;
@@ -381,6 +613,7 @@ export async function runNanoBananaCli(argv = process.argv.slice(2), {
   env = process.env,
   fetchImpl = globalThis.fetch,
   stdout = process.stdout,
+  generateGodTiboImageImpl = generateGodTiboImage,
 } = {}) {
   const options = parseNanoBananaCliArgs(argv);
   if (options.help) {
@@ -388,19 +621,86 @@ export async function runNanoBananaCli(argv = process.argv.slice(2), {
     return null;
   }
 
-  const { apiKey } = resolveNanoBananaApiKey(env);
-  if (!apiKey) {
-    throw new Error(getNanoBananaFallbackMessage('Nano Banana image generation requires GOOGLE_API_KEY or GEMINI_API_KEY.'));
-  }
+  let generated;
+  let providerUsed = options.provider;
+  const requestedNanoBananaImageSize = argvIncludesOption(argv, '--image-size');
+  const fallbackNotices = [];
 
-  const generated = await generateNanoBananaImage({
-    prompt: options.prompt,
-    apiKey,
-    model: options.model,
-    aspectRatio: options.aspectRatio,
-    imageSize: options.imageSize,
-    fetchImpl,
-  });
+  if (options.provider === IMAGE_PROVIDER_GOD_TIBO) {
+    try {
+      generated = await generateGodTiboFallbackImage({ options, generateGodTiboImageImpl });
+    } catch (godTiboError) {
+      const codexResolution = resolveCodexApiKey(env);
+      if (codexResolution.apiKey) {
+        fallbackNotices.push(`god-tibo failed (${godTiboError.message?.split('.')[0] || 'error'}); falling back to Codex/OpenAI.`);
+        try {
+          generated = await generateCodexFallbackImage({
+            options,
+            apiKey: codexResolution.apiKey,
+            fetchImpl,
+            requestedNanoBananaImageSize,
+          });
+          providerUsed = IMAGE_PROVIDER_CODEX;
+        } catch (codexError) {
+          const nanoResolution = resolveNanoBananaApiKey(env);
+          if (!nanoResolution.apiKey) {
+            throw new Error(getGodTiboFallbackMessage(codexError.message));
+          }
+          fallbackNotices.push(`Codex/OpenAI fallback failed; falling back to Nano Banana.`);
+          generated = await generateNanoBananaFallbackImage({ options, apiKey: nanoResolution.apiKey, fetchImpl });
+          providerUsed = IMAGE_PROVIDER_NANO_BANANA;
+        }
+      } else {
+        const nanoResolution = resolveNanoBananaApiKey(env);
+        if (!nanoResolution.apiKey) {
+          throw new Error(getGodTiboFallbackMessage(godTiboError.message));
+        }
+        fallbackNotices.push(`god-tibo failed (${godTiboError.message?.split('.')[0] || 'error'}); falling back to Nano Banana.`);
+        generated = await generateNanoBananaFallbackImage({ options, apiKey: nanoResolution.apiKey, fetchImpl });
+        providerUsed = IMAGE_PROVIDER_NANO_BANANA;
+      }
+    }
+  } else if (options.provider === IMAGE_PROVIDER_CODEX) {
+    const { apiKey: codexApiKey } = resolveCodexApiKey(env);
+    if (codexApiKey) {
+      try {
+        generated = await generateCodexFallbackImage({
+          options,
+          apiKey: codexApiKey,
+          fetchImpl,
+          requestedNanoBananaImageSize,
+        });
+      } catch (error) {
+        const { apiKey: fallbackApiKey } = resolveNanoBananaApiKey(env);
+        if (!fallbackApiKey) {
+          throw new Error(getCodexFallbackMessage(error.message));
+        }
+        providerUsed = IMAGE_PROVIDER_NANO_BANANA;
+        generated = await generateNanoBananaFallbackImage({ options, apiKey: fallbackApiKey, fetchImpl });
+      }
+    } else {
+      const { apiKey: fallbackApiKey } = resolveNanoBananaApiKey(env);
+      if (!fallbackApiKey) {
+        throw new Error(getCodexFallbackMessage('Codex image generation requires OPENAI_API_KEY.'));
+      }
+      providerUsed = IMAGE_PROVIDER_NANO_BANANA;
+      generated = await generateNanoBananaFallbackImage({ options, apiKey: fallbackApiKey, fetchImpl });
+    }
+  } else {
+    const { apiKey } = resolveNanoBananaApiKey(env);
+    if (!apiKey) {
+      throw new Error(getNanoBananaFallbackMessage('Nano Banana image generation requires GOOGLE_API_KEY or GEMINI_API_KEY.'));
+    }
+
+    generated = await generateNanoBananaImage({
+      prompt: options.prompt,
+      apiKey,
+      model: options.model,
+      aspectRatio: options.aspectRatio,
+      imageSize: options.imageSize,
+      fetchImpl,
+    });
+  }
 
   const target = await saveNanoBananaImage({
     prompt: options.prompt,
@@ -409,9 +709,14 @@ export async function runNanoBananaCli(argv = process.argv.slice(2), {
     name: options.name,
     mimeType: generated.mimeType,
     bytes: generated.bytes,
+    provider: providerUsed,
   });
 
+  for (const notice of fallbackNotices) {
+    stdout.write(`Fallback: ${notice}\n`);
+  }
   stdout.write(`Saved generated image to ${target.outputPath}\n`);
+  stdout.write(`Image provider: ${providerUsed}\n`);
   stdout.write(`Reference it from slide HTML as ${target.relativeRef}\n`);
   return target;
 }
